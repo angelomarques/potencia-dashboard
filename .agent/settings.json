@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "command(*)",
+      "read(*)",
+      "write(*)",
+      "edit(*)"
+    ]
+  }
+}
