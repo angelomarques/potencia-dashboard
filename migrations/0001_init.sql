@@ -106,9 +106,10 @@ VALUES ('board_lawa', 'app_lawa', 'Lawa Board', 'Default Lawa kanban board', uni
 
 INSERT OR IGNORE INTO columns (id, board_id, name, position, color, created_at) VALUES
   ('col_lawa_backlog', 'board_lawa', 'Backlog', 0, '#94a3b8', unixepoch() * 1000),
-  ('col_lawa_progress', 'board_lawa', 'In Progress', 1, '#3b82f6', unixepoch() * 1000),
-  ('col_lawa_review', 'board_lawa', 'Review', 2, '#f59e0b', unixepoch() * 1000),
-  ('col_lawa_done', 'board_lawa', 'Done', 3, '#22c55e', unixepoch() * 1000);
+  ('col_lawa_todo', 'board_lawa', 'To do', 1, '#6366f1', unixepoch() * 1000),
+  ('col_lawa_progress', 'board_lawa', 'In Progress', 2, '#3b82f6', unixepoch() * 1000),
+  ('col_lawa_review', 'board_lawa', 'Review', 3, '#f59e0b', unixepoch() * 1000),
+  ('col_lawa_done', 'board_lawa', 'Done', 4, '#22c55e', unixepoch() * 1000);
 
 INSERT OR IGNORE INTO cards (id, column_id, board_id, title, description, position, priority, created_at, updated_at) VALUES
   ('card_welcome', 'col_lawa_backlog', 'board_lawa', 'Welcome to Potencia Dashboard', 'Drag cards between columns, create new ones, and track Lawa work here.', 0, 'medium', unixepoch() * 1000, unixepoch() * 1000),
