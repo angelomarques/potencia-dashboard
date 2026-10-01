@@ -109,7 +109,7 @@ export default async function HomePage() {
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 {/* Column 1: Backlog */}
                 <div className="bg-muted/40 rounded-lg p-3 border border-border/40">
                   <div className="flex items-center justify-between mb-3">
@@ -138,7 +138,28 @@ export default async function HomePage() {
                   </div>
                 </div>
 
-                {/* Column 2: In Progress */}
+                {/* Column 2: To do */}
+                <div className="bg-muted/40 rounded-lg p-3 border border-border/40">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                      To do
+                    </span>
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">1</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <Card className="p-3 bg-card border-border/70 shadow-sm hover:border-primary/50 transition-colors">
+                      <div className="text-xs font-semibold">Sprint task prioritization</div>
+                      <p className="text-[11px] text-muted-foreground mt-1">Ready for current sprint execution and team assignment.</p>
+                      <div className="mt-2.5 flex items-center justify-between">
+                        <Badge variant="outline" className="text-[9px] h-4 text-indigo-600 bg-indigo-500/10 border-indigo-500/20">medium</Badge>
+                        <span className="text-[10px] text-muted-foreground">#card-3</span>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Column 3: In Progress */}
                 <div className="bg-muted/40 rounded-lg p-3 border border-border/40">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -153,13 +174,13 @@ export default async function HomePage() {
                       <p className="text-[11px] text-muted-foreground mt-1">Optimistic card reordering with smooth animations.</p>
                       <div className="mt-2.5 flex items-center justify-between">
                         <Badge variant="outline" className="text-[9px] h-4 text-amber-600 bg-amber-500/10 border-amber-500/20">high</Badge>
-                        <span className="text-[10px] text-muted-foreground">#card-3</span>
+                        <span className="text-[10px] text-muted-foreground">#card-4</span>
                       </div>
                     </Card>
                   </div>
                 </div>
 
-                {/* Column 3: Review */}
+                {/* Column 4: Review */}
                 <div className="bg-muted/40 rounded-lg p-3 border border-border/40">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -174,13 +195,13 @@ export default async function HomePage() {
                       <p className="text-[11px] text-muted-foreground mt-1">Zero latency cloud storage for board data.</p>
                       <div className="mt-2.5 flex items-center justify-between">
                         <Badge variant="outline" className="text-[9px] h-4 text-red-600 bg-red-500/10 border-red-500/20">urgent</Badge>
-                        <span className="text-[10px] text-muted-foreground">#card-4</span>
+                        <span className="text-[10px] text-muted-foreground">#card-5</span>
                       </div>
                     </Card>
                   </div>
                 </div>
 
-                {/* Column 4: Done */}
+                {/* Column 5: Done */}
                 <div className="bg-muted/40 rounded-lg p-3 border border-border/40">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
