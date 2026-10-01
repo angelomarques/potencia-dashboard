@@ -80,7 +80,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border-primary/40 bg-primary/10 text-primary"
           >
             <Sparkles className="h-3 w-3" />
-            Lawa Workspace
+            Lawa (Lawyer's platform) Workspace
           </Badge>
         </div>
       </div>
