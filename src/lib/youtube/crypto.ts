@@ -13,10 +13,9 @@ import {
  *
  * Scrypt salt is a public, non-secret context label hashed to 32 bytes so
  * secret scanners do not treat a hyphenated context string as an API key.
- * This salt differs from the former literal "potencia-yt-tokens-v1" used in
- * PR #2 tip 2a41941 — any tokens encrypted with that salt must be re-set
- * (re-OAuth / paste refresh token again). Feature was pre-merge; no prod
- * ciphertext expected.
+ * v1 salt used a different literal context string; ciphertext from that
+ * era must be re-set (re-OAuth / paste refresh token again). Pre-merge
+ * feature — no prod ciphertext expected.
  */
 const TOKEN_SCRYPT_SALT = createHash("sha256")
   .update("potencia.youtube.token.v1")
