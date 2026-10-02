@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Layers, LogOut, Sparkles } from "lucide-react";
+import { Layers, LogOut, Sparkles, Video } from "lucide-react";
 import { toast } from "sonner";
 
 interface DashboardHeaderProps {
@@ -82,6 +82,12 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             <Sparkles className="h-3 w-3" />
             Lawa (Lawyer's platform) Workspace
           </Badge>
+          <Button variant="ghost" size="sm" asChild className="h-8 gap-1.5 text-xs">
+            <Link href="/youtube">
+              <Video className="h-3.5 w-3.5 text-red-500" />
+              YouTube
+            </Link>
+          </Button>
         </div>
       </div>
 
