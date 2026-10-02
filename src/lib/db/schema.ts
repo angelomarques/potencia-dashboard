@@ -119,3 +119,75 @@ export type App = typeof apps.$inferSelect;
 export type Board = typeof boards.$inferSelect;
 export type Column = typeof columns.$inferSelect;
 export type Card = typeof cards.$inferSelect;
+
+
+export const youtubeChannels = sqliteTable("youtube_channels", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  handle: text("handle"),
+  youtubeChannelId: text("youtube_channel_id"),
+  refreshTokenEnc: text("refresh_token_enc"),
+  accessTokenEnc: text("access_token_enc"),
+  accessTokenExpiresAt: integer("access_token_expires_at", { mode: "number" }),
+  oauthScopes: text("oauth_scopes"),
+  tokenStatus: text("token_status").notNull().default("missing"),
+  notes: text("notes"),
+  createdAt: integer("created_at", { mode: "number" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "number" }).notNull(),
+});
+
+export const youtubeVideos = sqliteTable(
+  "youtube_videos",
+  {
+    id: text("id").primaryKey(),
+    channelId: text("channel_id")
+      .notNull()
+      .references(() => youtubeChannels.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    tagsJson: text("tags_json"),
+    categoryId: text("category_id").default("22"),
+    privacyStatus: text("privacy_status").notNull().default("private"),
+    madeForKids: integer("made_for_kids", { mode: "boolean" }).notNull().default(false),
+    r2Bucket: text("r2_bucket"),
+    r2Key: text("r2_key"),
+    r2SizeBytes: integer("r2_size_bytes", { mode: "number" }),
+    sourcePath: text("source_path"),
+    episode: text("episode"),
+    status: text("status").notNull().default("pending"),
+    youtubeVideoId: text("youtube_video_id"),
+    publishError: text("publish_error"),
+    metadataJson: text("metadata_json"),
+    createdAt: integer("created_at", { mode: "number" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "number" }).notNull(),
+    publishedAt: integer("published_at", { mode: "number" }),
+  },
+  (t) => [
+    index("idx_yt_videos_channel").on(t.channelId),
+    index("idx_yt_videos_status").on(t.status),
+  ],
+);
+
+export const youtubeUploadJobs = sqliteTable(
+  "youtube_upload_jobs",
+  {
+    id: text("id").primaryKey(),
+    videoId: text("video_id")
+      .notNull()
+      .references(() => youtubeVideos.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("queued"),
+    attempt: integer("attempt").notNull().default(0),
+    dryRun: integer("dry_run", { mode: "boolean" }).notNull().default(false),
+    requestJson: text("request_json"),
+    resultJson: text("result_json"),
+    error: text("error"),
+    createdAt: integer("created_at", { mode: "number" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "number" }).notNull(),
+    finishedAt: integer("finished_at", { mode: "number" }),
+  },
+  (t) => [index("idx_yt_jobs_video").on(t.videoId)],
+);
+
+export type YoutubeChannel = typeof youtubeChannels.$inferSelect;
+export type YoutubeVideo = typeof youtubeVideos.$inferSelect;
+export type YoutubeUploadJob = typeof youtubeUploadJobs.$inferSelect;
