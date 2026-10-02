@@ -17,6 +17,7 @@ Requires authenticated session (better-auth). For agent proves prefer the headle
 | `yt-channel-detail` | Channel detail shows OAuth badge + upload form |
 | `yt-upload-pending` | Upload creates pending row with r2_key |
 | `yt-dry-run-publish` | Dry-run publish returns mode=dry_run |
+| `yt-preview-video` | Preview button → signed R2 URL → inline `<video controls>` |
 
 ## Scripts
 

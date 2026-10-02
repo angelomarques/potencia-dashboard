@@ -33,6 +33,7 @@ Private / proprietary unless otherwise noted.
 Multi-channel YouTube queue inside the dashboard (`/youtube`).
 
 - Media files live on **Cloudflare R2** (prefix `potencia-dashboard/youtube/…`).
+- **Preview** on each queue row with an `r2_key` fetches a short-lived signed GetObject URL (auth session required; bucket stays private) and plays inline `<video controls>`.
 - D1 tables: `youtube_channels`, `youtube_videos`, `youtube_upload_jobs` (`migrations/0002_youtube.sql`).
 - Publish uses YouTube Data API when `YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET` and a channel refresh token are set; otherwise **dry-run** only.
 

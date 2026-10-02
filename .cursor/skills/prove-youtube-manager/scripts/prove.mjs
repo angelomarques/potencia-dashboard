@@ -110,9 +110,10 @@ async function main() {
   }
   const body = await readFile(fixture);
 
-  const { S3Client, PutObjectCommand, HeadObjectCommand } = require(
+  const { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand } = require(
     "@aws-sdk/client-s3",
   );
+  const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
   const accessKeyId = requireEnv(
     "CLOUDFLARE_R2_ACCESS_KEY_ID",
     "R2_ACCESS_KEY_ID",
@@ -207,6 +208,35 @@ async function main() {
     ],
   );
   report.steps.push({ step: "dry_run_job", pass: true, jobId });
+
+  // Signed preview URL (same path as /api/youtube/videos/:id/preview)
+  const signedUrl = await getSignedUrl(
+    client,
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ResponseContentType: "video/mp4",
+    }),
+    { expiresIn: 600 },
+  );
+  const previewRes = await fetch(signedUrl, {
+    method: "GET",
+    headers: { Range: "bytes=0-1023" },
+  });
+  if (!(previewRes.status === 200 || previewRes.status === 206)) {
+    throw new Error(`Signed preview GET failed: HTTP ${previewRes.status}`);
+  }
+  const previewBytes = Buffer.from(await previewRes.arrayBuffer());
+  if (previewBytes.length <= 0) {
+    throw new Error("Signed preview returned empty body");
+  }
+  report.steps.push({
+    step: "r2_signed_preview",
+    pass: true,
+    httpStatus: previewRes.status,
+    bytes: previewBytes.length,
+    expiresIn: 600,
+  });
 
   // Optional EO episode check
   const eoEp = process.env.PROVE_EO_EPISODE?.trim();

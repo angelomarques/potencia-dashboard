@@ -16,6 +16,7 @@ What it does:
 3. Inserts a pending `youtube_videos` row with title/description metadata.
 4. `HeadObject` proves R2 object exists and size &gt; 0.
 5. Dry-run publish path (or SQL-level dry_run job) succeeds without YouTube OAuth.
-6. Writes `artifacts/<slug>/report.json` and prints **PASS** / **FAIL**.
+6. Presigns a GetObject URL and Range-GETs the first 1KB (same mechanism as UI Preview).
+7. Writes `artifacts/<slug>/report.json` and prints **PASS** / **FAIL**.
 
 Optional: after EO import, set `PROVE_EO_EPISODE=ep022` to assert that episode’s R2 key exists.

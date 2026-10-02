@@ -20,6 +20,8 @@ import {
   Send,
   RefreshCw,
   Film,
+  Play,
+  X,
 } from "lucide-react";
 
 type Channel = {
@@ -60,6 +62,9 @@ export default function YoutubeChannelDetailPage() {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,6 +132,32 @@ export default function YoutubeChannelDetailPage() {
       toast.error(err instanceof Error ? err.message : "Publish failed");
     } finally {
       setPublishingId(null);
+    }
+  };
+
+  const closePreview = () => {
+    setPreviewId(null);
+    setPreviewUrl(null);
+  };
+
+  const openPreview = async (videoId: string) => {
+    if (previewId === videoId) {
+      closePreview();
+      return;
+    }
+    setPreviewLoading(true);
+    setPreviewId(videoId);
+    setPreviewUrl(null);
+    try {
+      const res = await fetch(`/api/youtube/videos/${videoId}/preview`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Preview failed");
+      setPreviewUrl(data.url as string);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Preview failed");
+      closePreview();
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -216,52 +247,96 @@ export default function YoutubeChannelDetailPage() {
               {videos.map((v) => (
                 <div
                   key={v.id}
-                  className="flex flex-col gap-2 rounded-lg border border-border/70 p-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-lg border border-border/70 p-3"
                 >
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{v.title}</div>
-                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <Badge variant="secondary">{v.status}</Badge>
-                      <Badge variant="outline">{v.privacy_status}</Badge>
-                      {v.episode && <span>{v.episode}</span>}
-                      <span>{formatBytes(v.r2_size_bytes)}</span>
-                      {v.youtube_video_id && (
-                        <span className="font-mono">yt:{v.youtube_video_id}</span>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{v.title}</div>
+                      <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <Badge variant="secondary">{v.status}</Badge>
+                        <Badge variant="outline">{v.privacy_status}</Badge>
+                        {v.episode && <span>{v.episode}</span>}
+                        <span>{formatBytes(v.r2_size_bytes)}</span>
+                        {v.youtube_video_id && (
+                          <span className="font-mono">yt:{v.youtube_video_id}</span>
+                        )}
+                      </div>
+                      {v.r2_key && (
+                        <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">
+                          {v.r2_key}
+                        </div>
+                      )}
+                      {v.publish_error && (
+                        <div className="mt-1 text-xs text-destructive">
+                          {v.publish_error}
+                        </div>
                       )}
                     </div>
-                    {v.r2_key && (
-                      <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">
-                        {v.r2_key}
-                      </div>
-                    )}
-                    {v.publish_error && (
-                      <div className="mt-1 text-xs text-destructive">
-                        {v.publish_error}
-                      </div>
-                    )}
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant={previewId === v.id ? "secondary" : "outline"}
+                        disabled={!v.r2_key || (previewLoading && previewId === v.id && !previewUrl)}
+                        onClick={() => void openPreview(v.id)}
+                        data-feature="yt-preview-video"
+                      >
+                        {previewLoading && previewId === v.id && !previewUrl ? (
+                          "Loading…"
+                        ) : previewId === v.id ? (
+                          <>
+                            <X className="mr-1 h-3.5 w-3.5" />
+                            Close
+                          </>
+                        ) : (
+                          <>
+                            <Play className="mr-1 h-3.5 w-3.5" />
+                            Preview
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={publishingId === v.id || !v.r2_key}
+                        onClick={() => void publish(v.id, true)}
+                      >
+                        Dry-run
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={
+                          publishingId === v.id ||
+                          !v.r2_key ||
+                          v.status === "published"
+                        }
+                        onClick={() => void publish(v.id, false)}
+                      >
+                        <Send className="mr-1 h-3.5 w-3.5" />
+                        {publishingId === v.id ? "…" : "Publish"}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex shrink-0 gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={publishingId === v.id || !v.r2_key}
-                      onClick={() => void publish(v.id, true)}
-                    >
-                      Dry-run
-                    </Button>
-                    <Button
-                      size="sm"
-                      disabled={
-                        publishingId === v.id ||
-                        !v.r2_key ||
-                        v.status === "published"
-                      }
-                      onClick={() => void publish(v.id, false)}
-                    >
-                      <Send className="mr-1 h-3.5 w-3.5" />
-                      {publishingId === v.id ? "…" : "Publish"}
-                    </Button>
-                  </div>
+                  {previewId === v.id && (
+                    <div className="overflow-hidden rounded-md border border-border/60 bg-black">
+                      {previewLoading && !previewUrl && (
+                        <p className="p-4 text-sm text-muted-foreground">
+                          Loading signed preview…
+                        </p>
+                      )}
+                      {previewUrl && (
+                        <video
+                          key={previewUrl}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="max-h-96 w-full"
+                          src={previewUrl}
+                        >
+                          Your browser does not support video playback.
+                        </video>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </CardContent>

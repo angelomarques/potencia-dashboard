@@ -101,3 +101,28 @@ export function youtubeMediaKey(parts: {
   const vid = parts.videoId ?? "new";
   return `potencia-dashboard/youtube/${parts.channelId}/${vid}/${safe}`;
 }
+
+/** Short-lived signed GET URL for private R2 objects (browser <video> / download). */
+export async function presignR2GetUrl(opts: {
+  key: string;
+  bucket?: string;
+  expiresInSeconds?: number;
+  responseContentType?: string;
+}): Promise<{ url: string; expiresIn: number; bucket: string; key: string }> {
+  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+  const { cfg, client } = getR2();
+  const bucket = opts.bucket ?? cfg.bucket;
+  const expiresIn = opts.expiresInSeconds ?? 600;
+  const url = await getSignedUrl(
+    client,
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: opts.key,
+      ...(opts.responseContentType
+        ? { ResponseContentType: opts.responseContentType }
+        : {}),
+    }),
+    { expiresIn },
+  );
+  return { url, expiresIn, bucket, key: opts.key };
+}
