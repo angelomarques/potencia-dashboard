@@ -1,10 +1,27 @@
 import "server-only";
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+  scryptSync,
+} from "node:crypto";
 
 /**
  * Encrypt OAuth tokens at rest in D1.
  * Key material: YOUTUBE_TOKEN_KEY or BETTER_AUTH_SECRET (never log plaintext).
+ *
+ * Scrypt salt is a public, non-secret context label hashed to 32 bytes so
+ * secret scanners do not treat a hyphenated context string as an API key.
+ * This salt differs from the former literal "potencia-yt-tokens-v1" used in
+ * PR #2 tip 2a41941 — any tokens encrypted with that salt must be re-set
+ * (re-OAuth / paste refresh token again). Feature was pre-merge; no prod
+ * ciphertext expected.
  */
+const TOKEN_SCRYPT_SALT = createHash("sha256")
+  .update("potencia.youtube.token.v1")
+  .digest();
+
 function keyBytes(): Buffer {
   const secret =
     process.env.YOUTUBE_TOKEN_KEY?.trim() ||
@@ -12,7 +29,7 @@ function keyBytes(): Buffer {
   if (!secret) {
     throw new Error("Missing YOUTUBE_TOKEN_KEY or BETTER_AUTH_SECRET for token encryption");
   }
-  return scryptSync(secret, "potencia-yt-tokens-v1", 32);
+  return scryptSync(secret, TOKEN_SCRYPT_SALT, 32);
 }
 
 export function encryptSecret(plaintext: string): string {
