@@ -26,6 +26,7 @@ function getExpectedHostnames(): Set<string> {
     return new Set([
       "potencia-dashboard-nu.vercel.app",
       "potencia-dashboard.vercel.app",
+      "dashboard.potenciaapps.com.br",
     ]);
   }
 
