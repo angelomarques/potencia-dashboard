@@ -17,7 +17,9 @@ interface TurnstileWidgetProps {
   onError?: (err?: string) => void;
   onExpire?: () => void;
   siteKey?: string;
+  action?: string;
   theme?: "light" | "dark" | "auto";
+  execution?: "render" | "execute";
   className?: string;
 }
 
@@ -28,11 +30,15 @@ declare global {
         container: HTMLElement | string,
         options: {
           sitekey: string;
+          action?: string;
           callback: (token: string) => void;
           "error-callback"?: (error?: string) => void;
           "expired-callback"?: () => void;
           theme?: "light" | "dark" | "auto";
-          size?: "normal" | "compact";
+          size?: "normal" | "compact" | "flexible";
+          retry?: "auto" | "never";
+          "refresh-expired"?: "auto" | "manual" | "never";
+          execution?: "render" | "execute";
         },
       ) => string;
       reset: (widgetId: string) => void;
@@ -49,7 +55,9 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
       onError,
       onExpire,
       siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA",
+      action,
       theme = "auto",
+      execution = "render",
       className,
     },
     ref,
@@ -59,7 +67,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
     const [isLoading, setIsLoading] = useState(true);
 
     // Keep latest parent callbacks in refs so the render effect does not
-    // depend on them (inline arrows from sign-up would remount the widget).
+    // depend on them (prevents remount loops from callback recreation).
     const onVerifyRef = useRef(onVerify);
     const onErrorRef = useRef(onError);
     const onExpireRef = useRef(onExpire);
@@ -69,7 +77,11 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
 
     const resetWidget = () => {
       if (widgetIdRef.current && window.turnstile) {
-        window.turnstile.reset(widgetIdRef.current);
+        try {
+          window.turnstile.reset(widgetIdRef.current);
+        } catch {
+          // ignore reset errors
+        }
       }
     };
 
@@ -78,37 +90,56 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
     }));
 
     useEffect(() => {
-      let isMounted = true;
+      let cancelled = false;
       let checkInterval: ReturnType<typeof setInterval> | undefined;
+      let scriptElement: HTMLScriptElement | null = null;
+      let onScriptLoad: (() => void) | undefined;
+      const container = containerRef.current;
 
       const renderTurnstile = () => {
-        if (!containerRef.current || !window.turnstile || widgetIdRef.current) return;
+        if (cancelled) return;
+        if (!container || !window.turnstile || widgetIdRef.current) return;
+
+        // Clear container innerHTML before render to avoid stale iframe DOM
+        container.innerHTML = "";
+
         try {
-          const id = window.turnstile.render(containerRef.current, {
+          const id = window.turnstile.render(container, {
             sitekey: siteKey,
+            ...(action ? { action } : {}),
             theme,
+            retry: "auto",
+            "refresh-expired": "auto",
+            execution,
             callback: (token: string) => {
-              if (isMounted) {
-                setIsLoading(false);
+              if (!cancelled) {
                 onVerifyRef.current(token);
               }
             },
             "error-callback": (err?: string) => {
-              if (isMounted) {
-                setIsLoading(false);
+              if (!cancelled) {
                 onErrorRef.current?.(err);
               }
             },
             "expired-callback": () => {
-              if (isMounted) {
+              if (!cancelled) {
                 onExpireRef.current?.();
               }
             },
           });
-          widgetIdRef.current = id;
-          setIsLoading(false);
+
+          if (!cancelled && id) {
+            widgetIdRef.current = id;
+            setIsLoading(false);
+          } else if (id && window.turnstile) {
+            try {
+              window.turnstile.remove(id);
+            } catch {
+              // ignore
+            }
+          }
         } catch (e: unknown) {
-          if (isMounted) {
+          if (!cancelled) {
             setIsLoading(false);
             const msg = e instanceof Error ? e.message : "Turnstile error";
             onErrorRef.current?.(msg);
@@ -131,10 +162,32 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
             script.defer = true;
             document.head.appendChild(script);
           }
+          scriptElement = script;
+
+          onScriptLoad = () => {
+            if (window.turnstile) {
+              if (checkInterval) {
+                clearInterval(checkInterval);
+                checkInterval = undefined;
+              }
+              renderTurnstile();
+            }
+          };
+          scriptElement.addEventListener("load", onScriptLoad);
 
           checkInterval = setInterval(() => {
+            if (cancelled) {
+              if (checkInterval) {
+                clearInterval(checkInterval);
+                checkInterval = undefined;
+              }
+              return;
+            }
             if (window.turnstile) {
-              if (checkInterval) clearInterval(checkInterval);
+              if (checkInterval) {
+                clearInterval(checkInterval);
+                checkInterval = undefined;
+              }
               renderTurnstile();
             }
           }, 100);
@@ -142,16 +195,27 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
       }
 
       return () => {
-        isMounted = false;
-        if (checkInterval) clearInterval(checkInterval);
-        // Only tear down on real unmount / siteKey|theme change — not on
-        // parent callback identity changes after a successful verify.
+        cancelled = true;
+        if (checkInterval) {
+          clearInterval(checkInterval);
+          checkInterval = undefined;
+        }
+        if (scriptElement && onScriptLoad) {
+          scriptElement.removeEventListener("load", onScriptLoad);
+        }
         if (widgetIdRef.current && window.turnstile) {
-          window.turnstile.remove(widgetIdRef.current);
+          try {
+            window.turnstile.remove(widgetIdRef.current);
+          } catch {
+            // ignore
+          }
           widgetIdRef.current = null;
         }
+        if (container) {
+          container.innerHTML = "";
+        }
       };
-    }, [siteKey, theme]);
+    }, [siteKey, theme, action, execution]);
 
     return (
       <div
