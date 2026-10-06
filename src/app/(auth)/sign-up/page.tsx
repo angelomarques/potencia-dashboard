@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,19 @@ export default function SignUpPage() {
 
   const turnstileRef = useRef<TurnstileWidgetHandle | null>(null);
 
+  const handleVerify = useCallback((token: string) => {
+    setTurnstileToken(token);
+  }, []);
+
+  const handleExpire = useCallback(() => {
+    setTurnstileToken("");
+  }, []);
+
+  const handleError = useCallback((err?: string) => {
+    console.error("Turnstile error:", err);
+    toast.error("Turnstile security check failed to load.");
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -54,6 +67,7 @@ export default function SignUpPage() {
 
     setIsLoading(true);
     setErrorMsg(null);
+    let succeeded = false;
 
     try {
       const res = await fetch("/api/auth/sign-up", {
@@ -75,12 +89,10 @@ export default function SignUpPage() {
         const msg = data?.error || `Registration failed (${res.status})`;
         setErrorMsg(msg);
         toast.error(msg);
-        setTurnstileToken("");
-        turnstileRef.current?.reset();
-        setIsLoading(false);
         return;
       }
 
+      succeeded = true;
       toast.success("Account created successfully! Welcome to Lawa.");
       router.push("/board");
       router.refresh();
@@ -88,9 +100,12 @@ export default function SignUpPage() {
       const msg = err instanceof Error ? err.message : "An unexpected error occurred.";
       setErrorMsg(msg);
       toast.error(msg);
-      setTurnstileToken("");
-      turnstileRef.current?.reset();
+    } finally {
       setIsLoading(false);
+      if (!succeeded) {
+        setTurnstileToken("");
+        turnstileRef.current?.reset();
+      }
     }
   };
 
@@ -180,12 +195,10 @@ export default function SignUpPage() {
             </div>
             <TurnstileWidget
               ref={turnstileRef}
-              onVerify={(token) => setTurnstileToken(token)}
-              onExpire={() => setTurnstileToken("")}
-              onError={(err) => {
-                console.error("Turnstile error:", err);
-                toast.error("Turnstile security check failed to load.");
-              }}
+              action="signup"
+              onVerify={handleVerify}
+              onExpire={handleExpire}
+              onError={handleError}
             />
           </div>
         </CardContent>

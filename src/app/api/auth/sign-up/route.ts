@@ -39,7 +39,9 @@ export async function POST(request: NextRequest) {
       request.headers.get("cf-connecting-ip") ||
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
 
-    const isTurnstileValid = await verifyTurnstileToken(turnstileToken, ip);
+    const isTurnstileValid = await verifyTurnstileToken(turnstileToken, ip, {
+      action: "signup",
+    });
     if (!isTurnstileValid) {
       return NextResponse.json(
         { error: "Security check failed. Please refresh and complete the verification." },
