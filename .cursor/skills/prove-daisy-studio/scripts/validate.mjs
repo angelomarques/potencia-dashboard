@@ -1,6 +1,6 @@
 import crypto from "node:crypto"; import fs from "node:fs";
 import { chromium } from "playwright-core";
-const BASE="http://localhost:43211", SECRET=process.env.DAISY_WEBHOOK_SECRET, PULL=process.env.DAISY_PULL_TOKEN;
+const BASE="http://localhost:43211", SECRET=process.env.DAISY_WEBHOOK_SECRET, PULL=process.env.DAISY_PULL_TOKEN, BEARER=process.env.DAISY_WEBHOOK_BEARER;
 const OUT="/workspace/daisy-studio-evidence"; const results=[];
 const check=(name,ok,detail="")=>{results.push({name,ok,detail});console.log(`${ok?"PASS":"FAIL"} ${name} ${detail}`);};
 const sign=(ts,body)=>"v1="+crypto.createHmac("sha256",SECRET).update(`${ts}.${body}`).digest("hex");
@@ -85,6 +85,9 @@ await new Promise(r=>setTimeout(r,1500));
 const recv=fs.existsSync(OUT+"/outbound-received.jsonl")?fs.readFileSync(OUT+"/outbound-received.jsonl","utf8").trim().split("\n").map(JSON.parse):[];
 const types=new Set(recv.map(r=>r.body.type));
 check("outbound push: all owner event types delivered + signature valid",["owner.sketch_chosen","owner.comment","owner.gate_submitted","owner.gate_continued","owner.message"].every(t=>types.has(t))&&recv.every(r=>r.signatureValid),[...types].join(","));
+if (BEARER && BEARER.trim() !== "") {
+  check("outbound push: bearer auth valid (authOk:true)", recv.length > 0 && recv.every(r => r.authOk === true), `count=${recv.length}`);
+}
 const pu=await fetch(BASE+"/api/daisy/events?after=0&limit=100",{headers:{authorization:"Bearer "+PULL}}); const pj=await pu.json();
 check("pull: bearer auth returns events",pu.status===200&&pj.events.length>=5,`n=${pj.events?.length} nextCursor=${pj.nextCursor}`);
 check("pull: wrong token 401",(await fetch(BASE+"/api/daisy/events",{headers:{authorization:"Bearer nope"}})).status===401);

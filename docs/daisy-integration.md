@@ -20,6 +20,7 @@ Communication between Daisy and the Potencia Dashboard is bidirectional, authent
 |---|---|
 | `DAISY_WEBHOOK_SECRET` | Shared secret key used for HMAC-SHA256 signature generation and verification in both directions. |
 | `DAISY_WEBHOOK_URL` | Daisy's HTTPS endpoint where the dashboard pushes outbound event webhooks. |
+| `DAISY_WEBHOOK_BEARER` | Optional Bearer token for outbound webhook deliveries. When set, requests to `DAISY_WEBHOOK_URL` include `Authorization: Bearer <value>` (e.g. Cursor routine webhook endpoint). |
 | `DAISY_PULL_TOKEN` | Bearer token used by Daisy to authenticate against `GET /api/daisy/events` and `POST /api/daisy/events/ack`. |
 | `DAISY_OWNER_EMAIL` | Optional email address of the studio dashboard owner. |
 | `DAISY_PREVIEW_ALLOWED_ORIGINS` | Optional comma-separated extra domains or wildcards (e.g. `*.myhost.com,https://preview.app`) allowed for iframe previews. |
@@ -338,6 +339,26 @@ When `DAISY_WEBHOOK_URL` and `DAISY_WEBHOOK_SECRET` are configured:
    - Vercel Cron schedule (`0 3 * * *` via `GET /api/daisy/outbound/deliver`).
 
 > **Important**: Delivered events remain pullable via `GET /api/daisy/events` until explicitly acknowledged via `POST /api/daisy/events/ack`. Daisy should deduplicate events by `id`.
+
+### Outbound Bearer Authentication (`DAISY_WEBHOOK_BEARER`)
+
+Outbound requests to `DAISY_WEBHOOK_URL` include the standard HMAC headers:
+- `x-daisy-signature`: HMAC-SHA256 signature (`v1=<hex>`).
+- `x-daisy-timestamp`: Unix timestamp in seconds.
+- `x-daisy-event-id`: Outbound event ID.
+- `content-type`: `application/json`.
+- `user-agent`: `potencia-dashboard-daisy/1`.
+
+#### Optional Bearer Header
+When the environment variable `DAISY_WEBHOOK_BEARER` is configured:
+- Every outbound webhook delivery (both immediate push and retry attempts) includes an `Authorization: Bearer <value>` header alongside the HMAC headers.
+- When `DAISY_WEBHOOK_BEARER` is unset or empty, no `Authorization` header is sent.
+- The HMAC signature computation is **unchanged**; it signs `timestamp.rawBody` regardless of whether the Bearer header is included.
+
+#### When to Use It
+Set `DAISY_WEBHOOK_BEARER` when the receiver endpoint listening on `DAISY_WEBHOOK_URL` requires Bearer token authentication in addition to or alongside HMAC signatures:
+- **Cursor Routine Webhook Endpoints**: Cursor routine automations or webhooks that require a fixed API bearer token in the `Authorization` header.
+- **Protected Receiver Gateways**: Receiver infrastructure behind Cloudflare Access Service Tokens, reverse proxies, or API gateways enforcing Authorization headers.
 
 ---
 

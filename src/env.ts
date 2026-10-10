@@ -5,6 +5,7 @@ export const env = createEnv({
   server: {
     DAISY_WEBHOOK_SECRET: z.string().optional(),
     DAISY_WEBHOOK_URL: z.string().url().optional(),
+    DAISY_WEBHOOK_BEARER: z.string().min(1).optional(),
     DAISY_PULL_TOKEN: z.string().optional(),
     DAISY_OWNER_EMAIL: z.string().optional(),
     DAISY_PREVIEW_ALLOWED_ORIGINS: z.string().optional(),
@@ -17,6 +18,7 @@ export const env = createEnv({
   runtimeEnv: {
     DAISY_WEBHOOK_SECRET: process.env.DAISY_WEBHOOK_SECRET,
     DAISY_WEBHOOK_URL: process.env.DAISY_WEBHOOK_URL,
+    DAISY_WEBHOOK_BEARER: process.env.DAISY_WEBHOOK_BEARER,
     DAISY_PULL_TOKEN: process.env.DAISY_PULL_TOKEN,
     DAISY_OWNER_EMAIL: process.env.DAISY_OWNER_EMAIL,
     DAISY_PREVIEW_ALLOWED_ORIGINS: process.env.DAISY_PREVIEW_ALLOWED_ORIGINS,

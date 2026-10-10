@@ -67,6 +67,7 @@ export type OutboundDeps = {
   env?: {
     DAISY_WEBHOOK_URL?: string;
     DAISY_WEBHOOK_SECRET?: string;
+    DAISY_WEBHOOK_BEARER?: string;
   };
   repo?: {
     insertOutboundEvent: (input: {
@@ -89,6 +90,27 @@ export type OutboundDeps = {
   fetch?: typeof fetch;
   now?: () => number;
 };
+
+/** Strip the bearer value from any string we persist (e.g. D1 last_error). */
+function redactSecret(message: string, secret?: string): string {
+  const t = secret?.trim();
+  return t ? message.split(t).join("[redacted]") : message;
+}
+
+export function buildOutboundHeaders(
+  signedHeaders: Record<string, string>,
+  bearer?: string
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    "user-agent": "potencia-dashboard-daisy/1",
+    ...signedHeaders,
+  };
+  if (bearer && bearer.trim() !== "") {
+    headers["authorization"] = `Bearer ${bearer.trim()}`;
+  }
+  return headers;
+}
 
 function fallbackBuildSignedHeaders(
   secret: string,
@@ -138,17 +160,14 @@ export async function emitOutbound<T extends OutboundEventType>(
 
   const webhookUrl = envVars.DAISY_WEBHOOK_URL;
   const webhookSecret = envVars.DAISY_WEBHOOK_SECRET;
+  const webhookBearer = envVars.DAISY_WEBHOOK_BEARER;
 
   if (webhookUrl && webhookSecret) {
     try {
       const envelope = toEnvelope(storedEvent);
       const rawBody = JSON.stringify(envelope);
       const signedHeaders = buildHeadersFn(webhookSecret, rawBody, storedEvent.id);
-      const headers: Record<string, string> = {
-        "content-type": "application/json",
-        "user-agent": "potencia-dashboard-daisy/1",
-        ...signedHeaders,
-      };
+      const headers = buildOutboundHeaders(signedHeaders, webhookBearer);
 
       const res = await fetchFn(webhookUrl, {
         method: "POST",
@@ -168,8 +187,10 @@ export async function emitOutbound<T extends OutboundEventType>(
         });
       }
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : String(err);
+      const errorMessage = redactSecret(
+        err instanceof Error ? err.message : String(err),
+        webhookBearer
+      );
       const { nextAttemptAt, failed } = calculateBackoff(1, nowFn());
       await repo.markOutboundAttempt(storedEvent.id, {
         error: errorMessage,
@@ -208,6 +229,7 @@ export async function deliverDueOutbound(
 
   const webhookUrl = envVars.DAISY_WEBHOOK_URL;
   const webhookSecret = envVars.DAISY_WEBHOOK_SECRET;
+  const webhookBearer = envVars.DAISY_WEBHOOK_BEARER;
 
   if (!webhookUrl || !webhookSecret) {
     return { attempted: 0, delivered: 0 };
@@ -225,11 +247,7 @@ export async function deliverDueOutbound(
       const envelope = toEnvelope(event);
       const rawBody = JSON.stringify(envelope);
       const signedHeaders = buildHeadersFn(webhookSecret, rawBody, event.id);
-      const headers: Record<string, string> = {
-        "content-type": "application/json",
-        "user-agent": "potencia-dashboard-daisy/1",
-        ...signedHeaders,
-      };
+      const headers = buildOutboundHeaders(signedHeaders, webhookBearer);
 
       const res = await fetchFn(webhookUrl, {
         method: "POST",
@@ -253,8 +271,10 @@ export async function deliverDueOutbound(
         });
       }
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : String(err);
+      const errorMessage = redactSecret(
+        err instanceof Error ? err.message : String(err),
+        webhookBearer
+      );
       const { nextAttemptAt, failed } = calculateBackoff(
         nextAttemptCount,
         nowFn()
