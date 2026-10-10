@@ -11,7 +11,10 @@
     "db:migrate:daisy": "node scripts/apply-daisy-migration.mjs",
     "youtube:import-eo": "node scripts/import-eo-handoffs.mjs",
     "prove:youtube": ".cursor/skills/prove-youtube-manager/scripts/prove.sh",
-    "test:daisy": "vitest run src/lib/daisy"
+    "test:daisy": "vitest run src/lib/daisy",
+    "test:auth": "vitest run src/lib/auth",
+    "test:e2e:auth-origin": "node tests/e2e/auth-origin.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1144.0",
@@ -59,6 +62,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "playwright-core": "^1.64.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.3",
