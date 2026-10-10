@@ -12,6 +12,7 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
     CRON_SECRET: z.string().optional(),
     D1_HTTP_BASE_URL: z.string().url().optional(),
+    BETTER_AUTH_TRUSTED_ORIGINS: z.string().optional(),
   },
   runtimeEnv: {
     DAISY_WEBHOOK_SECRET: process.env.DAISY_WEBHOOK_SECRET,
@@ -23,6 +24,7 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     CRON_SECRET: process.env.CRON_SECRET,
     D1_HTTP_BASE_URL: process.env.D1_HTTP_BASE_URL,
+    BETTER_AUTH_TRUSTED_ORIGINS: process.env.BETTER_AUTH_TRUSTED_ORIGINS,
   },
   emptyStringAsUndefined: true,
   skipValidation: Boolean(process.env.SKIP_ENV_VALIDATION),

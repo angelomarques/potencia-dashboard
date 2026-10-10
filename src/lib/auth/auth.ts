@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { verifyTurnstileToken } from "./turnstile";
+import { getTrustedOrigins } from "./trusted-origins";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -27,9 +28,7 @@ export const auth = betterAuth({
     additionalFields: {},
   },
   plugins: [nextCookies()],
-  trustedOrigins: [
-    process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  ].filter(Boolean),
+  trustedOrigins: getTrustedOrigins(process.env),
   databaseHooks: {
     user: {
       create: {
