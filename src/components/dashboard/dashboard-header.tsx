@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { HelpCircle, Layers, LogOut, Sparkles, Video } from "lucide-react";
+import { HelpCircle, Layers, LogOut, Palette, Sparkles, Video } from "lucide-react";
 import { toast } from "sonner";
 
 interface DashboardHeaderProps {
@@ -92,6 +92,12 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             <Link href="/help-center">
               <HelpCircle className="h-3.5 w-3.5 text-blue-500" />
               Help center
+            </Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="h-8 gap-1.5 text-xs">
+            <Link href="/daisy">
+              <Palette className="h-3.5 w-3.5 text-pink-500" />
+              Daisy
             </Link>
           </Button>
         </div>

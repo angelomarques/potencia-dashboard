@@ -1,0 +1,150 @@
+{
+  "at": "2026-10-10T20:55:57.482Z",
+  "results": [
+    {
+      "name": "inbound project.upserted",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "inbound project.upserted",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "inbound message.created",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "inbound sketch.created",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "inbound sketch.created",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "inbound preview.updated",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "webhook: valid signature accepted",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "webhook: replay dropped (duplicate:true)",
+      "ok": true,
+      "detail": "{\"ok\":true,\"duplicate\":true}"
+    },
+    {
+      "name": "webhook: bad signature rejected 401",
+      "ok": true,
+      "detail": "{\"error\":\"bad_signature\"}"
+    },
+    {
+      "name": "webhook: stale timestamp rejected 401",
+      "ok": true,
+      "detail": "{\"error\":\"stale_timestamp\"}"
+    },
+    {
+      "name": "webhook: missing signature 401",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "webhook: disallowed preview origin rejected 422",
+      "ok": true,
+      "detail": "{\"error\":\"preview_origin_not_allowed\"}"
+    },
+    {
+      "name": "webhook: http preview rejected 422",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "inbound section.ready",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "owner sign-up (local)",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "UI: projects list shows projects",
+      "ok": true,
+      "detail": "cards=2"
+    },
+    {
+      "name": "UI: nav link to /daisy in header",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "UI: thread shows messages + sketches",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "UI: allowed preview iframe rendered sandboxed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "UI: choose sketch -> chosen/rejected",
+      "ok": true,
+      "detail": "Chosen|Rejected"
+    },
+    {
+      "name": "UI: pinned comment on sketch",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "UI: reference image upload to R2",
+      "ok": true,
+      "detail": "201"
+    },
+    {
+      "name": "UI: gate submitted (no open gate)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "UI: gate Continue resolves gate",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "UI: disallowed stored preview blocked (no iframe)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "outbound push: all owner event types delivered + signature valid",
+      "ok": true,
+      "detail": "owner.sketch_chosen,owner.comment,owner.gate_submitted,owner.gate_continued,owner.message"
+    },
+    {
+      "name": "pull: bearer auth returns events",
+      "ok": true,
+      "detail": "n=5 nextCursor=15"
+    },
+    {
+      "name": "pull: wrong token 401",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "pull: ack removes acked events",
+      "ok": true,
+      "detail": "acked=5 remaining=0"
+    }
+  ]
+}

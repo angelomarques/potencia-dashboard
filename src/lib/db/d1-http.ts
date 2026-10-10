@@ -17,6 +17,12 @@ function env(name: string): string {
   return v;
 }
 
+function getBaseUrl(): string {
+  const custom = process.env.D1_HTTP_BASE_URL?.trim();
+  if (custom) return custom.replace(/\/+$/, "");
+  return "https://api.cloudflare.com/client/v4";
+}
+
 export async function d1Query<T = Record<string, unknown>>(
   sql: string,
   params: unknown[] = [],
@@ -26,7 +32,7 @@ export async function d1Query<T = Record<string, unknown>>(
   const token = env("CLOUDFLARE_API_TOKEN");
 
   const res = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${dbId}/query`,
+    `${getBaseUrl()}/accounts/${accountId}/d1/database/${dbId}/query`,
     {
       method: "POST",
       headers: {
@@ -58,7 +64,7 @@ export async function d1Batch(
   const token = env("CLOUDFLARE_API_TOKEN");
 
   const res = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${dbId}/query`,
+    `${getBaseUrl()}/accounts/${accountId}/d1/database/${dbId}/query`,
     {
       method: "POST",
       headers: {
