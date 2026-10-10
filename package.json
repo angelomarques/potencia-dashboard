@@ -10,7 +10,8 @@
     "db:migrate:youtube": "node scripts/apply-youtube-migration.mjs",
     "db:migrate:daisy": "node scripts/apply-daisy-migration.mjs",
     "youtube:import-eo": "node scripts/import-eo-handoffs.mjs",
-    "prove:youtube": ".cursor/skills/prove-youtube-manager/scripts/prove.sh"
+    "prove:youtube": ".cursor/skills/prove-youtube-manager/scripts/prove.sh",
+    "test:daisy": "vitest run src/lib/daisy"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1144.0",
