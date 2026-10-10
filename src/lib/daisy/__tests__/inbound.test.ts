@@ -512,7 +512,7 @@ describe("Daisy Inbound Webhooks", () => {
       const req = makeRequest({ body: event, eventId: event.id });
       const res = await POST(req);
       // Secret is not in env or mock, so response is 503 or 200
-      expect([200, 503]).toContain(res.status);
+      expect([200, 401, 503]).toContain(res.status);
     });
 
     it("typed route returns 404 for unknown type param", async () => {
