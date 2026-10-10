@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate:youtube": "node scripts/apply-youtube-migration.mjs",
+    "db:migrate:daisy": "node scripts/apply-daisy-migration.mjs",
     "youtube:import-eo": "node scripts/import-eo-handoffs.mjs",
     "prove:youtube": ".cursor/skills/prove-youtube-manager/scripts/prove.sh"
   },
