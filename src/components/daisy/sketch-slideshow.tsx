@@ -137,7 +137,10 @@ export function SketchSlideshow({ projectId, items }: SketchSlideshowProps) {
 
   if (items.length === 0 || currentGroupItems.length === 0) {
     return (
-      <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed bg-muted/20">
+      <Card
+        data-testid="daisy-slideshow"
+        className="flex flex-col items-center justify-center p-12 text-center border-dashed bg-muted/20"
+      >
         <ImageIcon className="h-8 w-8 text-pink-500/50 mb-2" />
         <p className="text-sm font-medium text-foreground">No Sketches Yet</p>
         <p className="text-xs text-muted-foreground mt-1 max-w-sm">
@@ -192,8 +195,8 @@ export function SketchSlideshow({ projectId, items }: SketchSlideshowProps) {
         sketchId: sketch.id,
         projectId: sketch.projectId || projectId,
         body: text,
-        x: null,
-        y: null,
+        x: activePin ? activePin.x : null,
+        y: activePin ? activePin.y : null,
       });
       setCommentText("");
       setActivePin(null);
@@ -466,7 +469,7 @@ export function SketchSlideshow({ projectId, items }: SketchSlideshowProps) {
           )}
 
           {/* Dots Indicator */}
-          {currentGroupItems.length > 1 && (
+          {currentGroupItems.length > 0 && (
             <div
               data-testid="slideshow-dots"
               className="flex items-center justify-center gap-1.5 pt-1"
@@ -488,9 +491,12 @@ export function SketchSlideshow({ projectId, items }: SketchSlideshowProps) {
             </div>
           )}
 
-          {/* Thumbnails Row (if > 1 slide) */}
-          {currentGroupItems.length > 1 && (
-            <div className="flex items-center gap-2 overflow-x-auto py-1 px-0.5">
+          {/* Thumbnails Row */}
+          {currentGroupItems.length > 0 && (
+            <div
+              data-testid="slideshow-thumbnails"
+              className="flex items-center gap-2 overflow-x-auto py-1 px-0.5"
+            >
               {currentGroupItems.map((item, idx) => {
                 const isSelected = idx === currentIndex;
                 return (

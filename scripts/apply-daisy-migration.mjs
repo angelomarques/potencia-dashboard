@@ -56,7 +56,9 @@ async function main() {
           },
         );
         const checkData = await checkRes.json();
-        const tableSql = checkData.result?.[0]?.results?.[0]?.sql;
+        const tableSql =
+          checkData.result?.[0]?.results?.[0]?.sql ??
+          checkData.results?.[0]?.sql;
         if (typeof tableSql === "string") {
           const hasCompositePk =
             /PRIMARY\s+KEY\s*\([^)]*project_id[^)]*id/i.test(tableSql) ||

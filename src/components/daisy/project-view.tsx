@@ -112,7 +112,9 @@ export function ProjectView({
             data-testid="preview-toggle"
             variant={activeView === "preview" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setActiveView("preview")}
+            onClick={() =>
+              setActiveView((prev) => (prev === "preview" ? "slideshow" : "preview"))
+            }
             className={`h-7 text-xs gap-1.5 ${
               activeView === "preview"
                 ? "bg-background text-foreground shadow-xs hover:bg-background"
