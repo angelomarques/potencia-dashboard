@@ -46,11 +46,19 @@ export type DaisyComment = {
   id: string;
   projectId: string;
   sketchId: string; // pinned to this sketch
+  author?: string;
   body: string;
-  x: number | null; // optional pin position 0..1
+  x: number | null; // optional pin position 0..1, null when not pinned
   y: number | null;
   createdAt: number;
 };
+
+export class DaisySketchConflictError extends Error {
+  constructor(message = "Sketch conflict") {
+    super(message);
+    this.name = "DaisySketchConflictError";
+  }
+}
 
 export type DaisyGateStatus = "open" | "continued" | "submitted";
 export type DaisyGate = {
@@ -168,10 +176,20 @@ export const OUTBOUND_EVENT_TYPES = [
 ] as const;
 export type OutboundEventType = (typeof OUTBOUND_EVENT_TYPES)[number];
 
+export const ownerCommentPayloadSchema = z.object({
+  projectId: z.string().min(1).max(128),
+  sketchId: z.string().min(1).max(128),
+  commentId: z.string().min(1).max(128),
+  body: z.string().min(1).max(2000),
+  x: z.number().min(0).max(1).nullable(),
+  y: z.number().min(0).max(1).nullable(),
+});
+export type OwnerCommentPayload = z.infer<typeof ownerCommentPayloadSchema>;
+
 export type OutboundPayloads = {
   "owner.message": { projectId: string; messageId: string; body: string };
   "owner.sketch_chosen": { projectId: string; sketchId: string; groupId: string | null; rejectedSketchIds: string[] };
-  "owner.comment": { projectId: string; sketchId: string; commentId: string; body: string; x: number | null; y: number | null };
+  "owner.comment": OwnerCommentPayload;
   "owner.gate_submitted": {
     projectId: string; gateId: string; section: string; notes: string | null;
     references: (DaisyReference & { url: string | null })[]; // url = presigned GET (short-lived) when R2 configured

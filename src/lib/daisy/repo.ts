@@ -1,22 +1,25 @@
 import "server-only";
 import { d1Query } from "@/lib/db/d1-http";
-import type {
-  DaisyComment,
-  DaisyEvent,
-  DaisyEventDirection,
-  DaisyGate,
-  DaisyGateStatus,
-  DaisyMessage,
-  DaisyMessageAuthor,
-  DaisyProject,
-  DaisyProjectStatus,
-  DaisyReference,
-  DaisySketch,
-  DaisySketchKind,
-  DaisySketchStatus,
-  DaisyThreadItem,
-  OutboundEventType,
+import {
+  DaisySketchConflictError,
+  type DaisyComment,
+  type DaisyEvent,
+  type DaisyEventDirection,
+  type DaisyGate,
+  type DaisyGateStatus,
+  type DaisyMessage,
+  type DaisyMessageAuthor,
+  type DaisyProject,
+  type DaisyProjectStatus,
+  type DaisyReference,
+  type DaisySketch,
+  type DaisySketchKind,
+  type DaisySketchStatus,
+  type DaisyThreadItem,
+  type OutboundEventType,
 } from "./types";
+
+export { DaisySketchConflictError };
 
 type ProjectRow = {
   id: string;
@@ -55,6 +58,7 @@ type CommentRow = {
   id: string;
   project_id: string;
   sketch_id: string;
+  author?: string | null;
   body: string;
   x: number | null;
   y: number | null;
@@ -132,6 +136,7 @@ function mapComment(row: CommentRow): DaisyComment {
     id: row.id,
     projectId: row.project_id,
     sketchId: row.sketch_id,
+    author: row.author ?? "owner",
     body: row.body,
     x: row.x != null ? Number(row.x) : null,
     y: row.y != null ? Number(row.y) : null,
@@ -302,22 +307,39 @@ export async function addSketch(
   const id = input.id || crypto.randomUUID();
   const now = Date.now();
 
-  await d1Query(
-    `INSERT INTO daisy_sketches (
-       id, project_id, group_id, section, label, kind, image_url, url, status, created_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?)`,
-    [
-      id,
-      input.projectId,
-      input.groupId ?? null,
-      input.section ?? null,
-      input.label,
-      input.kind,
-      input.imageUrl ?? null,
-      input.url ?? null,
-      now,
-    ],
-  );
+  const existing = await getSketch(id, input.projectId);
+  if (existing) {
+    throw new DaisySketchConflictError(
+      `Sketch "${id}" already exists in project "${input.projectId}"`
+    );
+  }
+
+  try {
+    await d1Query(
+      `INSERT INTO daisy_sketches (
+         id, project_id, group_id, section, label, kind, image_url, url, status, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?)`,
+      [
+        id,
+        input.projectId,
+        input.groupId ?? null,
+        input.section ?? null,
+        input.label,
+        input.kind,
+        input.imageUrl ?? null,
+        input.url ?? null,
+        now,
+      ],
+    );
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/UNIQUE constraint failed/i.test(msg) || /unique/i.test(msg)) {
+      throw new DaisySketchConflictError(
+        `Sketch "${id}" already exists in project "${input.projectId}"`
+      );
+    }
+    throw err;
+  }
 
   await d1Query(
     `UPDATE daisy_projects
@@ -326,12 +348,22 @@ export async function addSketch(
     [now, now, input.projectId],
   );
 
-  const sketch = await getSketch(id);
+  const sketch = await getSketch(id, input.projectId);
   if (!sketch) throw new Error(`Failed to fetch sketch: ${id}`);
   return sketch;
 }
 
-export async function getSketch(id: string): Promise<DaisySketch | null> {
+export async function getSketch(
+  id: string,
+  projectId?: string,
+): Promise<DaisySketch | null> {
+  if (projectId) {
+    const { results } = await d1Query<SketchRow>(
+      `SELECT * FROM daisy_sketches WHERE id = ? AND project_id = ? LIMIT 1`,
+      [id, projectId],
+    );
+    return results[0] ? mapSketch(results[0]) : null;
+  }
   const { results } = await d1Query<SketchRow>(
     `SELECT * FROM daisy_sketches WHERE id = ? LIMIT 1`,
     [id],
@@ -341,28 +373,29 @@ export async function getSketch(id: string): Promise<DaisySketch | null> {
 
 export async function chooseSketch(
   sketchId: string,
+  projectId?: string,
 ): Promise<{ sketch: DaisySketch; rejectedSketchIds: string[] }> {
-  const sketch = await getSketch(sketchId);
+  const sketch = await getSketch(sketchId, projectId);
   if (!sketch) throw new Error(`Sketch not found: ${sketchId}`);
 
   let rejectedSketchIds: string[] = [];
   if (sketch.groupId) {
     const { results: others } = await d1Query<{ id: string }>(
-      `SELECT id FROM daisy_sketches WHERE group_id = ? AND id != ?`,
-      [sketch.groupId, sketchId],
+      `SELECT id FROM daisy_sketches WHERE project_id = ? AND group_id = ? AND id != ?`,
+      [sketch.projectId, sketch.groupId, sketchId],
     );
     rejectedSketchIds = others.map((r) => r.id);
     if (rejectedSketchIds.length > 0) {
       await d1Query(
-        `UPDATE daisy_sketches SET status = 'rejected' WHERE group_id = ? AND id != ?`,
-        [sketch.groupId, sketchId],
+        `UPDATE daisy_sketches SET status = 'rejected' WHERE project_id = ? AND group_id = ? AND id != ?`,
+        [sketch.projectId, sketch.groupId, sketchId],
       );
     }
   }
 
   await d1Query(
-    `UPDATE daisy_sketches SET status = 'chosen' WHERE id = ?`,
-    [sketchId],
+    `UPDATE daisy_sketches SET status = 'chosen' WHERE project_id = ? AND id = ?`,
+    [sketch.projectId, sketchId],
   );
 
   const now = Date.now();
@@ -371,7 +404,7 @@ export async function chooseSketch(
     [now, now, sketch.projectId],
   );
 
-  const updated = await getSketch(sketchId);
+  const updated = await getSketch(sketchId, sketch.projectId);
   if (!updated) throw new Error(`Failed to load chosen sketch: ${sketchId}`);
   return { sketch: updated, rejectedSketchIds };
 }
@@ -379,26 +412,50 @@ export async function chooseSketch(
 export async function addComment(input: {
   projectId: string;
   sketchId: string;
+  author?: string;
   body: string;
   x?: number | null;
   y?: number | null;
 }): Promise<DaisyComment> {
   const id = crypto.randomUUID();
   const now = Date.now();
+  const author = input.author ?? "owner";
 
-  await d1Query(
-    `INSERT INTO daisy_comments (id, project_id, sketch_id, body, x, y, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      input.projectId,
-      input.sketchId,
-      input.body,
-      input.x ?? null,
-      input.y ?? null,
-      now,
-    ],
-  );
+  try {
+    await d1Query(
+      `INSERT INTO daisy_comments (id, project_id, sketch_id, author, body, x, y, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        input.projectId,
+        input.sketchId,
+        author,
+        input.body,
+        input.x ?? null,
+        input.y ?? null,
+        now,
+      ],
+    );
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/no such column: author/i.test(msg)) {
+      await d1Query(
+        `INSERT INTO daisy_comments (id, project_id, sketch_id, body, x, y, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          input.projectId,
+          input.sketchId,
+          input.body,
+          input.x ?? null,
+          input.y ?? null,
+          now,
+        ],
+      );
+    } else {
+      throw err;
+    }
+  }
 
   await d1Query(
     `UPDATE daisy_projects SET last_activity_at = ?, updated_at = ? WHERE id = ?`,
@@ -409,6 +466,7 @@ export async function addComment(input: {
     id,
     projectId: input.projectId,
     sketchId: input.sketchId,
+    author,
     body: input.body,
     x: input.x ?? null,
     y: input.y ?? null,

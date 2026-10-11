@@ -1,5 +1,5 @@
 import { handleInboundRequest } from "@/lib/daisy/inbound";
-import type { InboundEventType } from "@/lib/daisy/types";
+import { DaisySketchConflictError, type InboundEventType } from "@/lib/daisy/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,11 +16,21 @@ export async function POST(
   req: Request,
   props: { params: Promise<{ type: string }> }
 ): Promise<Response> {
-  const params = await props.params;
-  const expectedType = TYPE_MAP[params.type];
-  if (!expectedType) {
-    return Response.json({ error: "unknown_webhook_type" }, { status: 404 });
-  }
+  try {
+    const params = await props.params;
+    const expectedType = TYPE_MAP[params.type];
+    if (!expectedType) {
+      return Response.json({ error: "unknown_webhook_type" }, { status: 404 });
+    }
 
-  return handleInboundRequest(req, { expectedType });
+    return await handleInboundRequest(req, { expectedType });
+  } catch (err: unknown) {
+    if (
+      err instanceof DaisySketchConflictError ||
+      (err as { name?: string })?.name === "DaisySketchConflictError"
+    ) {
+      return Response.json({ error: "sketch_conflict" }, { status: 409 });
+    }
+    return Response.json({ error: "internal_error" }, { status: 500 });
+  }
 }

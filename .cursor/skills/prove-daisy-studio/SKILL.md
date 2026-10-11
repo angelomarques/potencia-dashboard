@@ -10,7 +10,7 @@ Runs fully locally: a node:sqlite D1 HTTP mock (`D1_HTTP_BASE_URL`), `next dev`,
 ```bash
 S=.cursor/skills/prove-daisy-studio/scripts
 node $S/d1-mock.mjs &                       # :8788, DB_PATH=/tmp/daisy-local.db
-node $S/apply.mjs migrations/0001_init.sql migrations/0003_daisy.sql
+node $S/apply.mjs migrations/0001_init.sql migrations/0003_daisy.sql migrations/0004_daisy_sketch_scope.sql
 # env: D1_HTTP_BASE_URL=http://127.0.0.1:8788 CLOUDFLARE_ACCOUNT_ID/D1_DATABASE_ID/CLOUDFLARE_API_TOKEN=local
 #      BETTER_AUTH_SECRET, BETTER_AUTH_URL=http://localhost:43211, DAISY_WEBHOOK_SECRET, DAISY_PULL_TOKEN (random),
 #      DAISY_OWNER_EMAIL=angelo@example.com, DAISY_WEBHOOK_URL=http://127.0.0.1:8799/daisy-hook,
