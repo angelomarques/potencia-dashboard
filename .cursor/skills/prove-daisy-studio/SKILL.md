@@ -20,6 +20,6 @@ node $S/receiver.mjs &                      # :8799, writes outbound-received.js
 node $S/validate.mjs                        # needs playwright-core; prints PASS/FAIL per check, "ALL PASS"
 ```
 
-Checks: inbound for every event type; valid signature accepted; replay -> `duplicate:true`; bad signature / stale timestamp / missing signature -> 401; disallowed or http preview -> 422; projects list; thread; choose sketch (chosen/rejected); pinned comment; gate reference upload (R2) + submit; gate Continue; allowed preview iframe (sandboxed) vs blocked stored origin; outbound push signatures valid for all owner.* types (+ bearer authOk when DAISY_WEBHOOK_BEARER set); pull bearer 200/401; ack drains. Evidence -> `/workspace/daisy-studio-evidence/`.
+Checks: inbound for every event type (including `sketch.updated` and upsert semantics); valid signature accepted; replay -> `duplicate:true`; bad signature / stale timestamp / missing signature -> 401; disallowed or http preview -> 422; projects list; thread; slideshow testids (`daisy-slideshow`, counter, prev/next navigation, dots, thumbnails, comment thread/input); choose sketch (chosen/rejected); pinned comment (x/y nullable); gate reference upload (R2) + submit; gate Continue; allowed preview iframe (sandboxed) vs blocked stored origin; outbound push signatures valid for all owner.* types (+ bearer authOk when DAISY_WEBHOOK_BEARER set); pull bearer 200/401; ack drains. Evidence -> `/workspace/daisy-studio-evidence/`.
 
 Unit tests: `pnpm test:daisy` (vitest).

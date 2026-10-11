@@ -2,6 +2,7 @@
 -- Enables distinct projects to have sketches with the same sketchId without collision.
 -- Safe on existing data: copies existing sketches and comments, updates foreign keys, recreates indexes.
 
+PRAGMA defer_foreign_keys = true;
 PRAGMA foreign_keys = OFF;
 
 DROP TABLE IF EXISTS daisy_comments_new;

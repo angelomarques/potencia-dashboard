@@ -1,5 +1,20 @@
+// Usage: node .cursor/skills/prove-daisy-studio/scripts/apply.mjs migrations/0001_init.sql migrations/0003_daisy.sql migrations/0004_daisy_sketch_scope.sql
 import { readFileSync } from "node:fs";
-for (const f of process.argv.slice(2)) {
+
+const defaultMigrations = [
+  "migrations/0001_init.sql",
+  "migrations/0003_daisy.sql",
+  "migrations/0004_daisy_sketch_scope.sql",
+];
+
+const files = process.argv.slice(2).length > 0 ? process.argv.slice(2) : defaultMigrations;
+
+if (process.argv.slice(2).length === 0) {
+  console.log("Usage: node apply.mjs migrations/0001_init.sql migrations/0003_daisy.sql migrations/0004_daisy_sketch_scope.sql");
+  console.log(`Applying default migrations: ${defaultMigrations.join(" ")}`);
+}
+
+for (const f of files) {
   if (f.includes("0004")) {
     try {
       const check = await fetch("http://127.0.0.1:8788/accounts/x/d1/database/y/query", {

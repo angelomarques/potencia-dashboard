@@ -12,15 +12,18 @@ async function post(path,evt,{ts=Math.floor(Date.now()/1000),badSig=false}={}){
 const id=()=>"evt_"+crypto.randomUUID();
 // ---- Seed via signed inbound webhooks ----
 const P="lawa-landing", P2="eo-shop";
-const seed=[
- ["/api/daisy/webhooks/project",{id:id(),type:"project.upserted",data:{projectId:P,name:"Lawa — landing page",status:"active",summary:"Marketing landing for Lawa",currentSection:"Hero"}}],
- ["/api/daisy/webhooks/project",{id:id(),type:"project.upserted",data:{projectId:P2,name:"Empire Oddities shop",status:"done",summary:"Merch storefront",currentSection:"Footer"}}],
- ["/api/daisy/webhooks/message",{id:id(),type:"message.created",data:{projectId:P,body:"Oi Ângelo! I drafted two hero directions. Pick one and pin any tweaks to the sketch."}}],
- ["/api/daisy/webhooks/sketch",{id:id(),type:"sketch.created",data:{projectId:P,sketchId:"sk-hero-a",groupId:"hero",section:"Hero",label:"Hero A — bold gradient",kind:"card",imageUrl:"https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A"}}],
- ["/api/daisy/webhooks/sketch",{id:id(),type:"sketch.created",data:{projectId:P,sketchId:"sk-hero-b",groupId:"hero",section:"Hero",label:"Hero B — photo split",kind:"slide",imageUrl:"https://placehold.co/640x360/0ea5e9/ffffff/png?text=Hero+B"}}],
- ["/api/daisy/webhooks/preview",{id:id(),type:"preview.updated",data:{projectId:P,previewUrl:"https://next-blog-starter.vercel.app"}}],
-];
-for (const [p,e] of seed){ const r=await post(p,e); check(`inbound ${e.type}`, r.status===200, String(r.status)); }
+ const seed=[
+  ["/api/daisy/webhooks/project",{id:id(),type:"project.upserted",data:{projectId:P,name:"Lawa — landing page",status:"active",summary:"Marketing landing for Lawa",currentSection:"Hero"}}],
+  ["/api/daisy/webhooks/project",{id:id(),type:"project.upserted",data:{projectId:P2,name:"Empire Oddities shop",status:"done",summary:"Merch storefront",currentSection:"Footer"}}],
+  ["/api/daisy/webhooks/message",{id:id(),type:"message.created",data:{projectId:P,body:"Oi Ângelo! I drafted two hero directions. Pick one and pin any tweaks to the sketch."}}],
+  ["/api/daisy/webhooks/sketch",{id:id(),type:"sketch.created",data:{projectId:P,sketchId:"sk-hero-a",groupId:"hero",section:"Hero",label:"Hero A — bold gradient",kind:"card",imageUrl:"https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A"}}],
+  ["/api/daisy/webhooks/sketch",{id:id(),type:"sketch.created",data:{projectId:P,sketchId:"sk-hero-b",groupId:"hero",section:"Hero",label:"Hero B — photo split",kind:"slide",imageUrl:"https://placehold.co/640x360/0ea5e9/ffffff/png?text=Hero+B"}}],
+  ["/api/daisy/webhooks/sketch-updated",{id:id(),type:"sketch.updated",data:{projectId:P,sketchId:"sk-hero-a",groupId:"hero",section:"Hero",label:"Hero A — bold gradient (updated)",kind:"card",imageUrl:"https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A+Updated"}}],
+  ["/api/daisy/webhooks/preview",{id:id(),type:"preview.updated",data:{projectId:P,previewUrl:"https://next-blog-starter.vercel.app"}}],
+ ];
+ for (const [p,e] of seed){ const r=await post(p,e); check(`inbound ${e.type}`, r.status===200, String(r.status)); }
+ const skUpUniv=await post("/api/daisy/webhooks",{id:id(),type:"sketch.updated",data:{projectId:P,sketchId:"sk-hero-b",groupId:"hero",section:"Hero",label:"Hero B — photo split (updated)",kind:"slide",imageUrl:"https://placehold.co/640x360/0ea5e9/ffffff/png?text=Hero+B+Updated"}});
+ check("webhook: sketch.updated accepted",skUpUniv.status===200,String(skUpUniv.status));
 // ---- Signature accept/reject ----
 const good={id:id(),type:"message.created",data:{projectId:P,body:"Signature test message"}};
 check("webhook: valid signature accepted",(await post("/api/daisy/webhooks",good)).status===200);
