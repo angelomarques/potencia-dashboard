@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+// @ts-expect-error node:sqlite is built-in in Node 22, types missing in @types/node 20
 import { DatabaseSync } from "node:sqlite";
 
 // Create in-memory SQLite database
-let db: DatabaseSync;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let db: any;
 
 function initDb() {
   db = new DatabaseSync(":memory:");
@@ -112,7 +114,7 @@ describe("Daisy Sketch Scope & Conflict Handling", () => {
     initDb();
   });
 
-  it("cross-project: same sketchId in different projects both succeed", async () => {
+  it("cross-project same sketchId creates separate sketches", async () => {
     // 1. Create two separate projects
     await upsertProject({
       id: "project-alpha",
@@ -159,7 +161,7 @@ describe("Daisy Sketch Scope & Conflict Handling", () => {
     expect(retrievedBeta?.label).toBe("Hero Beta");
   });
 
-  it("deduplication: same event id replay returns 200 duplicate: true", async () => {
+  it("same event id replay dedupes", async () => {
     await upsertProject({
       id: "project-dedupe",
       name: "Project Dedupe",
@@ -214,23 +216,175 @@ describe("Daisy Sketch Scope & Conflict Handling", () => {
     expect(json2.duplicate).toBe(true);
   });
 
-  it("true conflict: different event with duplicate (project, sketchId) throws DaisySketchConflictError mapped to HTTP 409", async () => {
+  it("same-project upsert updates fields", async () => {
     await upsertProject({
-      id: "project-conflict",
-      name: "Project Conflict",
+      id: "project-upsert",
+      name: "Project Upsert",
       status: "active",
     });
 
-    // 1. First event adds sketch-conflict-1
+    const sketchId = "sketch-upsert-1";
+
+    // 1. Initial sketch.created event
     const event1 = {
-      id: "evt_sketch_initial_001",
+      id: "evt_sketch_created_001",
       type: "sketch.created",
       data: {
-        projectId: "project-conflict",
-        sketchId: "sketch-conflict-1",
+        projectId: "project-upsert",
+        sketchId,
         label: "Initial Version",
         kind: "card",
         imageUrl: "https://example.com/initial.png",
+        section: "Hero",
+        groupId: "group-init",
+      },
+    };
+
+    const raw1 = JSON.stringify(event1);
+    const ts1 = Math.floor(Date.now() / 1000);
+    const sig1 = signDaisyPayload(secret, String(ts1), raw1);
+
+    const req1 = new Request("http://localhost:3000/api/daisy/webhooks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        [DAISY_EVENT_ID_HEADER]: event1.id,
+        [DAISY_TIMESTAMP_HEADER]: String(ts1),
+        [DAISY_SIGNATURE_HEADER]: sig1,
+      },
+      body: raw1,
+    });
+
+    const res1 = await handleInboundRequest(req1, {
+      deps: { getWebhookSecret: () => secret },
+    });
+    expect(res1.status).toBe(200);
+    const json1 = await res1.json();
+    expect(json1.ok).toBe(true);
+
+    const sketch1 = await getSketch(sketchId, "project-upsert");
+    expect(sketch1).not.toBeNull();
+    expect(sketch1?.label).toBe("Initial Version");
+    expect(sketch1?.imageUrl).toBe("https://example.com/initial.png");
+    expect(sketch1?.url).toBeNull();
+    expect(sketch1?.section).toBe("Hero");
+    expect(sketch1?.groupId).toBe("group-init");
+    expect(sketch1?.kind).toBe("card");
+    expect(sketch1?.status).toBe("proposed");
+    const initialCreatedAt = sketch1?.createdAt;
+
+    // 2. NEW event id with existing sketchId updates label, imageUrl, url (and never returns 500)
+    const event2 = {
+      id: "evt_sketch_created_002",
+      type: "sketch.created",
+      data: {
+        projectId: "project-upsert",
+        sketchId,
+        label: "Updated Label",
+        imageUrl: "https://example.com/updated.png",
+        url: "https://example.com/sketch-page",
+      },
+    };
+
+    const raw2 = JSON.stringify(event2);
+    const ts2 = Math.floor(Date.now() / 1000);
+    const sig2 = signDaisyPayload(secret, String(ts2), raw2);
+
+    const req2 = new Request("http://localhost:3000/api/daisy/webhooks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        [DAISY_EVENT_ID_HEADER]: event2.id,
+        [DAISY_TIMESTAMP_HEADER]: String(ts2),
+        [DAISY_SIGNATURE_HEADER]: sig2,
+      },
+      body: raw2,
+    });
+
+    const res2 = await handleInboundRequest(req2, {
+      deps: { getWebhookSecret: () => secret },
+    });
+    expect(res2.status).toBe(200);
+    const json2 = await res2.json();
+    expect(json2.ok).toBe(true);
+
+    const sketch2 = await getSketch(sketchId, "project-upsert");
+    expect(sketch2).not.toBeNull();
+    expect(sketch2?.label).toBe("Updated Label");
+    expect(sketch2?.imageUrl).toBe("https://example.com/updated.png");
+    expect(sketch2?.url).toBe("https://example.com/sketch-page");
+    // Preserved because not provided
+    expect(sketch2?.section).toBe("Hero");
+    expect(sketch2?.groupId).toBe("group-init");
+    expect(sketch2?.kind).toBe("card");
+    expect(sketch2?.status).toBe("proposed");
+    expect(sketch2?.createdAt).toBe(initialCreatedAt);
+
+    // 3. NEW event id providing section, groupId, kind updates them
+    const event3 = {
+      id: "evt_sketch_created_003",
+      type: "sketch.created",
+      data: {
+        projectId: "project-upsert",
+        sketchId,
+        label: "Third Label",
+        imageUrl: "https://example.com/third.png",
+        section: "Features",
+        groupId: "group-updated",
+        kind: "slide",
+      },
+    };
+
+    const raw3 = JSON.stringify(event3);
+    const ts3 = Math.floor(Date.now() / 1000);
+    const sig3 = signDaisyPayload(secret, String(ts3), raw3);
+
+    const req3 = new Request("http://localhost:3000/api/daisy/webhooks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        [DAISY_EVENT_ID_HEADER]: event3.id,
+        [DAISY_TIMESTAMP_HEADER]: String(ts3),
+        [DAISY_SIGNATURE_HEADER]: sig3,
+      },
+      body: raw3,
+    });
+
+    const res3 = await handleInboundRequest(req3, {
+      deps: { getWebhookSecret: () => secret },
+    });
+    expect(res3.status).toBe(200);
+    const json3 = await res3.json();
+    expect(json3.ok).toBe(true);
+
+    const sketch3 = await getSketch(sketchId, "project-upsert");
+    expect(sketch3?.label).toBe("Third Label");
+    expect(sketch3?.imageUrl).toBe("https://example.com/third.png");
+    expect(sketch3?.section).toBe("Features");
+    expect(sketch3?.groupId).toBe("group-updated");
+    expect(sketch3?.kind).toBe("slide");
+    expect(sketch3?.createdAt).toBe(initialCreatedAt);
+  });
+
+  it("sketch.updated works", async () => {
+    await upsertProject({
+      id: "project-sketch-updated",
+      name: "Project Sketch Updated",
+      status: "active",
+    });
+
+    const sketchId = "sketch-update-test";
+
+    // 1. Initial sketch creation
+    const event1 = {
+      id: "evt_initial_before_update",
+      type: "sketch.created",
+      data: {
+        projectId: "project-sketch-updated",
+        sketchId,
+        label: "Initial For Update",
+        kind: "card",
+        imageUrl: "https://example.com/before.png",
       },
     };
 
@@ -254,27 +408,17 @@ describe("Daisy Sketch Scope & Conflict Handling", () => {
     });
     expect(res1.status).toBe(200);
 
-    // 2. Direct repo call with same (project, sketchId) throws typed DaisySketchConflictError
-    await expect(
-      addSketch({
-        id: "sketch-conflict-1",
-        projectId: "project-conflict",
-        label: "Colliding direct sketch",
-        kind: "card",
-        imageUrl: "https://example.com/collide.png",
-      })
-    ).rejects.toThrow(DaisySketchConflictError);
-
-    // 3. Second event has a NEW event ID, but targets the existing (projectId, sketchId)
+    // 2. Dispatch sketch.updated inbound event
     const event2 = {
-      id: "evt_sketch_duplicate_002",
-      type: "sketch.created",
+      id: "evt_sketch_updated_001",
+      type: "sketch.updated",
       data: {
-        projectId: "project-conflict",
-        sketchId: "sketch-conflict-1",
-        label: "Colliding Version",
-        kind: "card",
-        imageUrl: "https://example.com/collide.png",
+        projectId: "project-sketch-updated",
+        sketchId,
+        label: "Updated Via sketch.updated",
+        imageUrl: "https://example.com/after.png",
+        url: "https://example.com/sketch-page",
+        kind: "slide",
       },
     };
 
@@ -296,9 +440,150 @@ describe("Daisy Sketch Scope & Conflict Handling", () => {
     const res2 = await handleInboundRequest(req2, {
       deps: { getWebhookSecret: () => secret },
     });
-    expect(res2.status).toBe(409);
+    expect(res2.status).toBe(200);
     const json2 = await res2.json();
-    expect(json2).toEqual({ error: "sketch_conflict" });
+    expect(json2.ok).toBe(true);
+    expect(json2.type).toBe("sketch.updated");
+
+    const updatedSketch = await getSketch(sketchId, "project-sketch-updated");
+    expect(updatedSketch?.label).toBe("Updated Via sketch.updated");
+    expect(updatedSketch?.imageUrl).toBe("https://example.com/after.png");
+    expect(updatedSketch?.url).toBe("https://example.com/sketch-page");
+    expect(updatedSketch?.kind).toBe("slide");
+
+    // 3. sketch.updated on new sketch also creates it (upsert semantics)
+    const newSketchId = "sketch-created-by-update";
+    const event3 = {
+      id: "evt_sketch_updated_002",
+      type: "sketch.updated",
+      data: {
+        projectId: "project-sketch-updated",
+        sketchId: newSketchId,
+        label: "Created By Update",
+        imageUrl: "https://example.com/brand-new.png",
+      },
+    };
+
+    const raw3 = JSON.stringify(event3);
+    const ts3 = Math.floor(Date.now() / 1000);
+    const sig3 = signDaisyPayload(secret, String(ts3), raw3);
+
+    const req3 = new Request("http://localhost:3000/api/daisy/webhooks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        [DAISY_EVENT_ID_HEADER]: event3.id,
+        [DAISY_TIMESTAMP_HEADER]: String(ts3),
+        [DAISY_SIGNATURE_HEADER]: sig3,
+      },
+      body: raw3,
+    });
+
+    const res3 = await handleInboundRequest(req3, {
+      deps: { getWebhookSecret: () => secret },
+    });
+    expect(res3.status).toBe(200);
+    const createdByUpdate = await getSketch(newSketchId, "project-sketch-updated");
+    expect(createdByUpdate?.label).toBe("Created By Update");
+  });
+
+  it("error mapping -> 409/500 JSON", async () => {
+    await upsertProject({
+      id: "project-error-test",
+      name: "Project Error Test",
+      status: "active",
+    });
+
+    const conflictPayload = {
+      id: "evt_conflict_mapping",
+      type: "sketch.created",
+      data: {
+        projectId: "project-error-test",
+        sketchId: "sk-conflict",
+        label: "Conflict Sketch",
+        imageUrl: "https://example.com/conflict.png",
+      },
+    };
+
+    const rawConflict = JSON.stringify(conflictPayload);
+    const ts = Math.floor(Date.now() / 1000);
+    const sigConflict = signDaisyPayload(secret, String(ts), rawConflict);
+
+    const reqConflict = new Request("http://localhost:3000/api/daisy/webhooks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        [DAISY_EVENT_ID_HEADER]: conflictPayload.id,
+        [DAISY_TIMESTAMP_HEADER]: String(ts),
+        [DAISY_SIGNATURE_HEADER]: sigConflict,
+      },
+      body: rawConflict,
+    });
+
+    // 1. Genuine sketch conflict maps to HTTP 409 JSON { error: "sketch_conflict" }
+    const resConflict = await handleInboundRequest(reqConflict, {
+      deps: {
+        getWebhookSecret: () => secret,
+        addSketch: async () => {
+          throw new DaisySketchConflictError("Simulated genuine conflict");
+        },
+      },
+    });
+    expect(resConflict.status).toBe(409);
+    const jsonConflict = await resConflict.json();
+    expect(jsonConflict).toEqual({ error: "sketch_conflict" });
+
+    // 2. Unexpected error maps to HTTP 500 JSON { error: "internal_error" }
+    const errorPayload = {
+      id: "evt_internal_error_mapping",
+      type: "sketch.created",
+      data: {
+        projectId: "project-error-test",
+        sketchId: "sk-internal-error",
+        label: "Internal Error Sketch",
+        imageUrl: "https://example.com/error.png",
+      },
+    };
+
+    const rawError = JSON.stringify(errorPayload);
+    const sigError = signDaisyPayload(secret, String(ts), rawError);
+
+    const reqError = new Request("http://localhost:3000/api/daisy/webhooks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        [DAISY_EVENT_ID_HEADER]: errorPayload.id,
+        [DAISY_TIMESTAMP_HEADER]: String(ts),
+        [DAISY_SIGNATURE_HEADER]: sigError,
+      },
+      body: rawError,
+    });
+
+    const resError = await handleInboundRequest(reqError, {
+      deps: {
+        getWebhookSecret: () => secret,
+        addSketch: async () => {
+          throw new Error("Unexpected database disk explosion");
+        },
+      },
+    });
+    expect(resError.status).toBe(500);
+    const jsonError = await resError.json();
+    expect(jsonError).toEqual({ error: "internal_error" });
+
+    // 3. Typed route returns JSON 404 for unknown type, and JSON 409 on conflict
+    const { POST: typedPOST } = await import(
+      "@/app/api/daisy/webhooks/[type]/route"
+    );
+
+    const unknownReq = new Request("http://localhost:3000/api/daisy/webhooks/unknown", {
+      method: "POST",
+    });
+    const resUnknown = await typedPOST(unknownReq, {
+      params: Promise.resolve({ type: "unknown" }),
+    });
+    expect(resUnknown.status).toBe(404);
+    expect(await resUnknown.json()).toEqual({ error: "unknown_webhook_type" });
   });
 
   describe("owner.comment payload schema", () => {

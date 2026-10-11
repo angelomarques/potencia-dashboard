@@ -11,7 +11,9 @@ export async function POST(req: Request): Promise<Response> {
   } catch (err: unknown) {
     if (
       err instanceof DaisySketchConflictError ||
-      (err as { name?: string })?.name === "DaisySketchConflictError"
+      (err as { name?: string })?.name === "DaisySketchConflictError" ||
+      /sketch_conflict/i.test(String(err)) ||
+      /UNIQUE constraint failed/i.test(String(err))
     ) {
       return NextResponse.json({ error: "sketch_conflict" }, { status: 409 });
     }

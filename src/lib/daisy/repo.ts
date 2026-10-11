@@ -15,6 +15,7 @@ import {
   type DaisySketch,
   type DaisySketchKind,
   type DaisySketchStatus,
+  type DaisySketchUpsertInput,
   type DaisyThreadItem,
   type OutboundEventType,
 } from "./types";
@@ -301,34 +302,45 @@ export async function addMessage(input: {
   return mapMessage(results[0]);
 }
 
-export async function addSketch(
-  input: Omit<DaisySketch, "status" | "createdAt">,
+export async function upsertSketch(
+  input: DaisySketchUpsertInput,
 ): Promise<DaisySketch> {
   const id = input.id || crypto.randomUUID();
   const now = Date.now();
 
-  const existing = await getSketch(id, input.projectId);
-  if (existing) {
-    throw new DaisySketchConflictError(
-      `Sketch "${id}" already exists in project "${input.projectId}"`
-    );
-  }
+  const hasImageUrl = input.imageUrl !== undefined ? 1 : 0;
+  const hasUrl = input.url !== undefined ? 1 : 0;
+  const hasSection = input.section !== undefined ? 1 : 0;
+  const hasGroupId = input.groupId !== undefined ? 1 : 0;
+  const hasKind = input.kind !== undefined ? 1 : 0;
 
   try {
     await d1Query(
       `INSERT INTO daisy_sketches (
          id, project_id, group_id, section, label, kind, image_url, url, status, created_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed', ?)
+       ON CONFLICT(project_id, id) DO UPDATE SET
+         label = excluded.label,
+         image_url = CASE WHEN ? = 1 THEN excluded.image_url ELSE daisy_sketches.image_url END,
+         url = CASE WHEN ? = 1 THEN excluded.url ELSE daisy_sketches.url END,
+         section = CASE WHEN ? = 1 THEN excluded.section ELSE daisy_sketches.section END,
+         group_id = CASE WHEN ? = 1 THEN excluded.group_id ELSE daisy_sketches.group_id END,
+         kind = CASE WHEN ? = 1 THEN excluded.kind ELSE daisy_sketches.kind END`,
       [
         id,
         input.projectId,
         input.groupId ?? null,
         input.section ?? null,
         input.label,
-        input.kind,
+        input.kind ?? "card",
         input.imageUrl ?? null,
         input.url ?? null,
         now,
+        hasImageUrl,
+        hasUrl,
+        hasSection,
+        hasGroupId,
+        hasKind,
       ],
     );
   } catch (err: unknown) {
@@ -351,6 +363,12 @@ export async function addSketch(
   const sketch = await getSketch(id, input.projectId);
   if (!sketch) throw new Error(`Failed to fetch sketch: ${id}`);
   return sketch;
+}
+
+export async function addSketch(
+  input: DaisySketchUpsertInput,
+): Promise<DaisySketch> {
+  return upsertSketch(input);
 }
 
 export async function getSketch(

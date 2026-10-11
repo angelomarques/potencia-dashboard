@@ -42,6 +42,17 @@ export type DaisySketch = {
   createdAt: number;
 };
 
+export type DaisySketchUpsertInput = {
+  id: string;
+  projectId: string;
+  groupId?: string | null;
+  section?: string | null;
+  label: string;
+  kind?: DaisySketchKind;
+  imageUrl?: string | null;
+  url?: string | null;
+};
+
 export type DaisyComment = {
   id: string;
   projectId: string;
@@ -134,7 +145,7 @@ export const sketchData = z.object({
   groupId: z.string().max(128).nullish(),
   section: z.string().max(200).nullish(),
   label: z.string().min(1).max(200),
-  kind: z.enum(["card", "slide"]).default("card"),
+  kind: z.enum(["card", "slide"]).optional(),
   imageUrl: httpsUrl.nullish(),
   url: httpsUrl.nullish(),
 }).refine((d) => d.imageUrl || d.url, "imageUrl or url required");
@@ -152,6 +163,7 @@ export const INBOUND_EVENT_TYPES = [
   "project.upserted",
   "message.created",
   "sketch.created",
+  "sketch.updated",
   "section.ready",
   "preview.updated",
 ] as const;
@@ -161,6 +173,7 @@ export const inboundEventSchema = z.discriminatedUnion("type", [
   inboundEnvelope("project.upserted", projectUpsertData),
   inboundEnvelope("message.created", messageData),
   inboundEnvelope("sketch.created", sketchData),
+  inboundEnvelope("sketch.updated", sketchData),
   inboundEnvelope("section.ready", sectionReadyData),
   inboundEnvelope("preview.updated", previewData),
 ]);

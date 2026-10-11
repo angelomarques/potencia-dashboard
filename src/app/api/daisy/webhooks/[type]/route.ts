@@ -8,6 +8,9 @@ const TYPE_MAP: Record<string, InboundEventType> = {
   project: "project.upserted",
   message: "message.created",
   sketch: "sketch.created",
+  "sketch-updated": "sketch.updated",
+  "sketch.updated": "sketch.updated",
+  "sketch_updated": "sketch.updated",
   "section-ready": "section.ready",
   preview: "preview.updated",
 };
@@ -27,7 +30,9 @@ export async function POST(
   } catch (err: unknown) {
     if (
       err instanceof DaisySketchConflictError ||
-      (err as { name?: string })?.name === "DaisySketchConflictError"
+      (err as { name?: string })?.name === "DaisySketchConflictError" ||
+      /sketch_conflict/i.test(String(err)) ||
+      /UNIQUE constraint failed/i.test(String(err))
     ) {
       return Response.json({ error: "sketch_conflict" }, { status: 409 });
     }

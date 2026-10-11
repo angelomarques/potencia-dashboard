@@ -24,6 +24,7 @@ import {
   type DaisyProject,
   type DaisyProjectStatus,
   type DaisySketch,
+  type DaisySketchUpsertInput,
   type InboundEventType,
 } from "./types";
 
@@ -67,7 +68,10 @@ export type DaisyInboundDeps = {
     body: string;
   }) => Promise<DaisyMessage>;
   addSketch: (
-    input: Omit<DaisySketch, "status" | "createdAt">
+    input: DaisySketchUpsertInput
+  ) => Promise<DaisySketch>;
+  upsertSketch?: (
+    input: DaisySketchUpsertInput
   ) => Promise<DaisySketch>;
   getSketch?: (id: string, projectId?: string) => Promise<DaisySketch | null>;
   openGate: (input: {
@@ -89,6 +93,7 @@ export const defaultDeps: DaisyInboundDeps = {
   upsertProject: (input) => repo.upsertProject(input),
   addMessage: (input) => repo.addMessage(input),
   addSketch: (input) => repo.addSketch(input),
+  upsertSketch: (input) => repo.upsertSketch(input),
   getSketch: (id, projectId) => repo.getSketch(id, projectId),
   openGate: (input) => repo.openGate(input),
   setPreviewUrl: (projectId, url) => repo.setPreviewUrl(projectId, url),
@@ -238,19 +243,25 @@ export async function handleInboundRequest(
         });
         break;
       }
-      case "sketch.created": {
+      case "sketch.created":
+      case "sketch.updated": {
         const data = event.data as SketchData;
         await ensureProject(data.projectId, deps);
+        const sketchFn =
+          opts?.deps?.upsertSketch ??
+          opts?.deps?.addSketch ??
+          deps.upsertSketch ??
+          deps.addSketch;
         try {
-          await deps.addSketch({
+          await sketchFn({
             id: data.sketchId,
             projectId: data.projectId,
-            groupId: data.groupId ?? null,
-            section: data.section ?? null,
+            groupId: data.groupId !== undefined ? (data.groupId ?? null) : undefined,
+            section: data.section !== undefined ? (data.section ?? null) : undefined,
             label: data.label,
             kind: data.kind,
-            imageUrl: data.imageUrl ?? null,
-            url: data.url ?? null,
+            imageUrl: data.imageUrl !== undefined ? (data.imageUrl ?? null) : undefined,
+            url: data.url !== undefined ? (data.url ?? null) : undefined,
           });
         } catch (err: unknown) {
           if (
