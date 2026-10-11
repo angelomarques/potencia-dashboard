@@ -63,6 +63,7 @@ Or use dedicated sub-routes:
 - `POST /api/daisy/webhooks/project` (`project.upserted`)
 - `POST /api/daisy/webhooks/message` (`message.created`)
 - `POST /api/daisy/webhooks/sketch` (`sketch.created`)
+- `POST /api/daisy/webhooks/sketch-updated` (`sketch.updated`)
 - `POST /api/daisy/webhooks/section-ready` (`section.ready`)
 - `POST /api/daisy/webhooks/preview` (`preview.updated`)
 
@@ -229,10 +230,13 @@ For security, live preview URLs rendered in the dashboard iframe are strictly va
 | `422` | `invalid_payload` | Payload validation failed (Zod schema mismatch). |
 | `422` | `type_mismatch` | Event type in body does not match sub-route endpoint. |
 | `422` | `preview_origin_not_allowed` | Preview URL hostname is not allowlisted. |
-| `409` | `sketch_conflict` | Genuine database conflict while writing a sketch (JSON body, never an empty 500). Safe to retry with a new event id. |
+| `409` | `sketch_conflict` | Genuine database conflict while writing a sketch (returns JSON `{ "error": "sketch_conflict" }`, never an empty 500). Safe to retry with a new event id. |
 | `429` | `rate_limited` | Rate limit exceeded. Read `Retry-After` header for seconds to wait. |
-| `500` | `internal_error` | Unexpected server error; always returned as a JSON body. |
+| `500` | `internal_error` | Unexpected server error; always returned as a JSON body (`{ "error": "internal_error" }`). |
 | `503` | `daisy_not_configured` | Required environment variable (e.g. `DAISY_WEBHOOK_SECRET`, `DAISY_PULL_TOKEN`) is not configured. |
+
+> [!NOTE]
+> All errors, including `409` (`sketch_conflict`) and `500` (`internal_error`), are returned as structured JSON bodies (`{"error": "<code_name>"}`) with their corresponding HTTP status codes, rather than HTML or unhandled crashes.
 
 ---
 
@@ -295,12 +299,6 @@ Owner pinned a feedback comment to a specific position on a sketch.
 - `x`, `y`: Relative coordinates between `0.0` and `1.0`, or both `null` for an unpinned comment typed in the per-slide thread:
 ```json
 { "projectId": "proj_brand_refresh", "sketchId": "sketch_opt_a", "commentId": "comm_992", "body": "Love this palette.", "x": null, "y": null }
-```
-
-## Database migration 0004 (sketch scope)
-`migrations/0004_daisy_sketch_scope.sql` rebuilds `daisy_sketches` with `PRIMARY KEY (project_id, id)` and `daisy_comments` with a composite FK, copying all existing rows. **Required before deploying this version.** Safe on existing data (rows are copied, not dropped; idempotent re-run is skipped by the apply script):
-```bash
-node scripts/apply-daisy-migration.mjs   # or: pnpm exec wrangler d1 execute <DB> --remote --file migrations/0004_daisy_sketch_scope.sql
 ```
 
 #### 4. `owner.gate_submitted`
@@ -581,3 +579,18 @@ curl -s -X POST "https://dashboard.potenciaapps.com.br/api/daisy/events/ack" \
   -H "Content-Type: application/json" \
   -d '{"upTo": 42}'
 ```
+
+---
+
+## 11. Database Migration 0004 (Sketch Scope) & Pre-Deploy
+
+`migrations/0004_daisy_sketch_scope.sql` rebuilds `daisy_sketches` with `PRIMARY KEY (project_id, id)` and `daisy_comments` with a composite foreign key, copying all existing rows. This scopes sketches per project and enables atomic upserts (`ON CONFLICT(project_id, id) DO UPDATE`).
+
+### Pre-Deploy Requirement
+Always run `pnpm db:migrate:daisy` before deploy:
+
+```bash
+pnpm db:migrate:daisy
+```
+
+The migration runner (`scripts/apply-daisy-migration.mjs`) connects to D1, verifies `sqlite_master` for the composite primary key on `daisy_sketches`, and automatically skips `migrations/0004_daisy_sketch_scope.sql` if it is already applied, ensuring safe and idempotent deployments.
