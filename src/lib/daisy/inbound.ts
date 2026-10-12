@@ -25,6 +25,7 @@ import {
   type DaisyProjectStatus,
   type DaisySketch,
   type DaisySketchUpsertInput,
+  type InboundEvent,
   type InboundEventType,
 } from "./types";
 
@@ -113,6 +114,144 @@ async function ensureProject(projectId: string, deps: DaisyInboundDeps): Promise
   }
 }
 
+export type ApplyInboundResult = {
+  status: number;
+  body:
+    | { ok: true; id: string; type: string; duplicate?: false }
+    | { ok: true; duplicate: true }
+    | { error: string };
+};
+
+function res(body: ApplyInboundResult["body"], init: { status: number }): ApplyInboundResult {
+  return { status: init.status, body };
+}
+
+function isSketchConflict(err: unknown): boolean {
+  return (
+    err instanceof DaisySketchConflictError ||
+    (err as { name?: string })?.name === "DaisySketchConflictError" ||
+    /sketch_conflict/i.test(String(err)) ||
+    /UNIQUE constraint failed/i.test(String(err))
+  );
+}
+
+/**
+ * Apply an already-authenticated, schema-validated inbound event:
+ * preview allowlist check, idempotent record (by event.id), then the domain write.
+ * Used by the signed webhook route and by the MCP server (/api/mcp).
+ */
+export async function applyInboundEvent(
+  event: InboundEvent,
+  deps: DaisyInboundDeps = defaultDeps,
+  overrides?: Partial<DaisyInboundDeps>
+): Promise<ApplyInboundResult> {
+  const opts = { deps: overrides };
+  try {
+    // 9. For preview.updated, validate origin BEFORE recording the event
+      if (event.type === "preview.updated") {
+        const data = event.data as PreviewData;
+        if (!deps.isAllowedPreviewUrl(data.previewUrl)) {
+          return res(
+            { error: "preview_origin_not_allowed" },
+            { status: 422 }
+          );
+        }
+      }
+
+      // 10. Record inbound event once (deduplication)
+      const recorded = await deps.recordInboundEventOnce({
+        id: event.id,
+        type: event.type,
+        projectId: (event.data as { projectId?: string }).projectId ?? null,
+        payload: event.data,
+      });
+
+      if (!recorded) {
+        return res({ ok: true, duplicate: true }, { status: 200 });
+      }
+
+      // 11. Apply the event
+      switch (event.type) {
+        case "project.upserted": {
+          const data = event.data as ProjectUpsertData;
+          await deps.upsertProject({
+            id: data.projectId,
+            name: data.name,
+            status: data.status,
+            summary: data.summary ?? undefined,
+            currentSection: data.currentSection ?? undefined,
+          });
+          break;
+        }
+        case "message.created": {
+          const data = event.data as MessageData;
+          await ensureProject(data.projectId, deps);
+          await deps.addMessage({
+            id: data.messageId,
+            projectId: data.projectId,
+            author: "daisy",
+            body: data.body,
+          });
+          break;
+        }
+        case "sketch.created":
+        case "sketch.updated": {
+          const data = event.data as SketchData;
+          await ensureProject(data.projectId, deps);
+          const sketchFn =
+            opts?.deps?.upsertSketch ??
+            opts?.deps?.addSketch ??
+            deps.upsertSketch ??
+            deps.addSketch;
+          try {
+            await sketchFn({
+              id: data.sketchId,
+              projectId: data.projectId,
+              groupId: data.groupId !== undefined ? (data.groupId ?? null) : undefined,
+              section: data.section !== undefined ? (data.section ?? null) : undefined,
+              label: data.label,
+              kind: data.kind,
+              imageUrl: data.imageUrl !== undefined ? (data.imageUrl ?? null) : undefined,
+              url: data.url !== undefined ? (data.url ?? null) : undefined,
+            });
+          } catch (err: unknown) {
+            if (
+              err instanceof DaisySketchConflictError ||
+              (err as { name?: string })?.name === "DaisySketchConflictError" ||
+              /sketch_conflict/i.test(String(err)) ||
+              /UNIQUE constraint failed/i.test(String(err))
+            ) {
+              return res({ error: "sketch_conflict" }, { status: 409 });
+            }
+            throw err;
+          }
+          break;
+        }
+        case "section.ready": {
+          const data = event.data as SectionReadyData;
+          await ensureProject(data.projectId, deps);
+          await deps.openGate({
+            projectId: data.projectId,
+            section: data.section,
+            prompt: data.prompt ?? null,
+          });
+          break;
+        }
+        case "preview.updated": {
+          const data = event.data as PreviewData;
+          await ensureProject(data.projectId, deps);
+          await deps.setPreviewUrl(data.projectId, data.previewUrl);
+          break;
+        }
+      }
+
+    return res({ ok: true, id: event.id, type: event.type }, { status: 200 });
+  } catch (err: unknown) {
+    if (isSketchConflict(err)) return res({ error: "sketch_conflict" }, { status: 409 });
+    throw err;
+  }
+}
+
 export async function handleInboundRequest(
   req: Request,
   opts?: {
@@ -196,108 +335,9 @@ export async function handleInboundRequest(
       return Response.json({ error: "event_id_mismatch" }, { status: 400 });
     }
 
-    // 9. For preview.updated, validate origin BEFORE recording the event
-    if (event.type === "preview.updated") {
-      const data = event.data as PreviewData;
-      if (!deps.isAllowedPreviewUrl(data.previewUrl)) {
-        return Response.json(
-          { error: "preview_origin_not_allowed" },
-          { status: 422 }
-        );
-      }
-    }
-
-    // 10. Record inbound event once (deduplication)
-    const recorded = await deps.recordInboundEventOnce({
-      id: event.id,
-      type: event.type,
-      projectId: (event.data as { projectId?: string }).projectId ?? null,
-      payload: event.data,
-    });
-
-    if (!recorded) {
-      return Response.json({ ok: true, duplicate: true }, { status: 200 });
-    }
-
-    // 11. Apply the event
-    switch (event.type) {
-      case "project.upserted": {
-        const data = event.data as ProjectUpsertData;
-        await deps.upsertProject({
-          id: data.projectId,
-          name: data.name,
-          status: data.status,
-          summary: data.summary ?? undefined,
-          currentSection: data.currentSection ?? undefined,
-        });
-        break;
-      }
-      case "message.created": {
-        const data = event.data as MessageData;
-        await ensureProject(data.projectId, deps);
-        await deps.addMessage({
-          id: data.messageId,
-          projectId: data.projectId,
-          author: "daisy",
-          body: data.body,
-        });
-        break;
-      }
-      case "sketch.created":
-      case "sketch.updated": {
-        const data = event.data as SketchData;
-        await ensureProject(data.projectId, deps);
-        const sketchFn =
-          opts?.deps?.upsertSketch ??
-          opts?.deps?.addSketch ??
-          deps.upsertSketch ??
-          deps.addSketch;
-        try {
-          await sketchFn({
-            id: data.sketchId,
-            projectId: data.projectId,
-            groupId: data.groupId !== undefined ? (data.groupId ?? null) : undefined,
-            section: data.section !== undefined ? (data.section ?? null) : undefined,
-            label: data.label,
-            kind: data.kind,
-            imageUrl: data.imageUrl !== undefined ? (data.imageUrl ?? null) : undefined,
-            url: data.url !== undefined ? (data.url ?? null) : undefined,
-          });
-        } catch (err: unknown) {
-          if (
-            err instanceof DaisySketchConflictError ||
-            (err as { name?: string })?.name === "DaisySketchConflictError" ||
-            /sketch_conflict/i.test(String(err)) ||
-            /UNIQUE constraint failed/i.test(String(err))
-          ) {
-            return Response.json({ error: "sketch_conflict" }, { status: 409 });
-          }
-          throw err;
-        }
-        break;
-      }
-      case "section.ready": {
-        const data = event.data as SectionReadyData;
-        await ensureProject(data.projectId, deps);
-        await deps.openGate({
-          projectId: data.projectId,
-          section: data.section,
-          prompt: data.prompt ?? null,
-        });
-        break;
-      }
-      case "preview.updated": {
-        const data = event.data as PreviewData;
-        await ensureProject(data.projectId, deps);
-        await deps.setPreviewUrl(data.projectId, data.previewUrl);
-        break;
-      }
-    }
-
-    return Response.json(
-      { ok: true, id: event.id, type: event.type },
-      { status: 200 }
-    );
+    // 9-11. Validate, dedupe and apply (shared with the MCP server)
+    const result = await applyInboundEvent(event, deps, opts?.deps);
+    return Response.json(result.body, { status: result.status });
   } catch (err: unknown) {
     if (
       err instanceof DaisySketchConflictError ||

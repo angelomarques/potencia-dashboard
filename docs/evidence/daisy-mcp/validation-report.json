@@ -1,0 +1,126 @@
+{
+  "at": "2026-10-12T19:27:40.315Z",
+  "project": "mcp-prove-mv5n93ox",
+  "results": [
+    {
+      "name": "auth: no token -> 401",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "auth: wrong token -> 401",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "tools/list (cursor token)",
+      "ok": true,
+      "detail": "get_feedback,list_projects,post_message,push_sketch,update_sketch,upsert_project"
+    },
+    {
+      "name": "tools/list (antigravity token)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "upsert_project",
+      "ok": true,
+      "detail": "{\n  \"ok\": true,\n  \"id\": \"mcp_cursor_efdeb051-a8f1-4d52-87c4-0eb41267b21f\",\n  \"type\": \"project.upserted\",\n  \"projectId\": "
+    },
+    {
+      "name": "list_projects contains project",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "push_sketch (imageUrl)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "push_sketch (base64 -> R2 daisy-sketches)",
+      "ok": true,
+      "detail": "mcp-prove-mv5n93ox/r1/hero-b.png https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/hero-b.png"
+    },
+    {
+      "name": "R2 object exists (HeadObject, substitute bucket)",
+      "ok": true,
+      "detail": "image/png 100699"
+    },
+    {
+      "name": "update_sketch (partial; keeps image)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "update_sketch unknown sketch -> tool error",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "push_sketch rejects http image",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "post_message",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "post_message idempotent (duplicate:true)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "post_message from second agent",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "get_feedback before owner input: no owner messages/comments",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "stdio proxy lists push_sketch with filePath",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "stdio push_sketch filePath -> R2",
+      "ok": true,
+      "detail": "mcp-prove-mv5n93ox/r1/mcp-sample.png"
+    },
+    {
+      "name": "UI: agent messages rendered (attributed)",
+      "ok": true,
+      "detail": "n=2"
+    },
+    {
+      "name": "UI: slideshow shows 3 MCP sketches",
+      "ok": true,
+      "detail": "1 / 3"
+    },
+    {
+      "name": "get_feedback: owner chat message",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "get_feedback: sketch comment",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "get_feedback: chosen/rejected statuses",
+      "ok": true,
+      "detail": "hero-a:rejected,hero-b:chosen,hero-c:rejected"
+    },
+    {
+      "name": "get_feedback: cursor => nothing new",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

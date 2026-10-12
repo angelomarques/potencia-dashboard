@@ -1,0 +1,56 @@
+{
+  "project": {
+    "id": "mcp-prove-mv5n93ox",
+    "name": "MCP prove — landing",
+    "status": "active"
+  },
+  "messages": [
+    {
+      "id": "676487e4-c181-4b3b-a1a9-882ac25d0c72",
+      "author": "owner",
+      "body": "Great run. Next: do the Features section.",
+      "at": "2026-10-12T19:27:37.886Z"
+    }
+  ],
+  "sketches": [
+    {
+      "id": "hero-a",
+      "label": "Hero A — bold gradient (v2)",
+      "status": "rejected",
+      "groupId": "hero",
+      "section": "Hero",
+      "imageUrl": "https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A+(MCP)",
+      "comments": []
+    },
+    {
+      "id": "hero-b",
+      "label": "Hero B — uploaded via base64",
+      "status": "chosen",
+      "groupId": "hero",
+      "section": "Hero",
+      "imageUrl": "https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/hero-b.png",
+      "comments": [
+        {
+          "id": "2ed0ad00-efd9-41fd-9339-2a21860663ba",
+          "author": "owner",
+          "body": "Love B — make the headline 20% bigger.",
+          "x": null,
+          "y": null,
+          "at": "2026-10-12T19:27:37.565Z"
+        }
+      ]
+    },
+    {
+      "id": "hero-c",
+      "label": "Hero C — local file via stdio",
+      "status": "rejected",
+      "groupId": "hero",
+      "section": "Hero",
+      "imageUrl": "https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/mcp-sample.png",
+      "comments": []
+    }
+  ],
+  "gates": [],
+  "cursor": 1791833257886,
+  "hint": "Pass `cursor` as `since` next time to get only new feedback."
+}

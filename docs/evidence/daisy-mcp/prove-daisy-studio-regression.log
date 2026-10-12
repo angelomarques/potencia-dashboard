@@ -1,0 +1,33 @@
+PASS inbound project.upserted 200
+PASS inbound project.upserted 200
+PASS inbound message.created 200
+PASS inbound sketch.created 200
+PASS inbound sketch.created 200
+PASS inbound sketch.updated 200
+PASS inbound preview.updated 200
+PASS webhook: sketch.updated accepted 200
+PASS webhook: valid signature accepted 
+PASS webhook: replay dropped (duplicate:true) {"ok":true,"duplicate":true}
+PASS webhook: bad signature rejected 401 {"error":"bad_signature"}
+PASS webhook: stale timestamp rejected 401 {"error":"stale_timestamp"}
+PASS webhook: missing signature 401 
+PASS webhook: disallowed preview origin rejected 422 {"error":"preview_origin_not_allowed"}
+PASS webhook: http preview rejected 422 
+PASS inbound section.ready 
+PASS owner sign-up (local) 200
+PASS UI: projects list shows projects cards=2
+PASS UI: nav link to /daisy in header 
+PASS UI: thread shows messages + slideshow loaded 
+PASS UI: slideshow controls and testids present 
+PASS UI: allowed preview iframe rendered sandboxed 
+PASS UI: choose sketch -> chosen/rejected Chosen|Rejected
+PASS UI: pinned comment on sketch 
+PASS UI: reference image upload to R2 201
+PASS UI: gate submitted (no open gate) 
+PASS UI: gate Continue resolves gate 
+PASS UI: disallowed stored preview blocked (no iframe) 
+PASS outbound push: all owner event types delivered + signature valid owner.sketch_chosen,owner.comment,owner.gate_submitted,owner.gate_continued,owner.message
+PASS pull: bearer auth returns events n=5 nextCursor=17
+PASS pull: wrong token 401 
+PASS pull: ack removes acked events acked=5 remaining=0
+ALL PASS

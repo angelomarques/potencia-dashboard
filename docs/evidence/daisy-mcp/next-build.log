@@ -1,0 +1,63 @@
+$ next build
+▲ Next.js 16.3.6 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.ts took 23ms
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+
+  To migrate automatically, run:
+  npx @next/codemod@canary middleware-to-proxy .
+
+  Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 4.0s
+  Running TypeScript ...
+  Finished TypeScript in 5.8s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/7) ...
+  Generating static pages using 7 workers (1/7) 
+  Generating static pages using 7 workers (3/7) 
+  Generating static pages using 7 workers (5/7) 
+✓ Generating static pages using 7 workers (7/7) in 195ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/[...all]
+├ ƒ /api/auth/sign-up
+├ ƒ /api/boards/lawa
+├ ƒ /api/cards
+├ ƒ /api/cards/[id]
+├ ƒ /api/cards/move
+├ ƒ /api/daisy/events
+├ ƒ /api/daisy/events/ack
+├ ƒ /api/daisy/outbound/deliver
+├ ƒ /api/daisy/references
+├ ƒ /api/daisy/webhooks
+├ ƒ /api/daisy/webhooks/[type]
+├ ƒ /api/mcp
+├ ƒ /api/rpc/[[...rest]]
+├ ƒ /api/youtube/channels
+├ ƒ /api/youtube/channels/[id]
+├ ƒ /api/youtube/upload
+├ ƒ /api/youtube/videos
+├ ƒ /api/youtube/videos/[id]
+├ ƒ /api/youtube/videos/[id]/preview
+├ ƒ /api/youtube/videos/[id]/publish
+├ ƒ /board
+├ ƒ /daisy
+├ ƒ /daisy/[projectId]
+├ ƒ /help-center
+├ ○ /sign-in
+├ ○ /sign-up
+├ ƒ /youtube
+└ ƒ /youtube/[channelId]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+exit 0
