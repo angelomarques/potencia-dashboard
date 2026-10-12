@@ -30,8 +30,9 @@ Daisy Studio (`/daisy`) and read the owner's feedback, over MCP.
 |---|---|---|
 | `DAISY_MCP_TOKENS` | yes (else 503) | Comma-separated `agent:token` pairs, e.g. `cursor:<token>,antigravity:<token>`. Tokens must be ≥ 24 chars (`openssl rand -hex 32`). The agent name is attached to event ids and chat messages. Remove an entry to revoke that agent. Tokens are compared in constant time. |
 | `DAISY_SKETCH_R2_BUCKET` | no | Defaults to `daisy-sketches`. |
+| `DAISY_SKETCH_CF_API_TOKEN` | for uploads (preferred) | Cloudflare API token with R2 object write on the sketch bucket (+ `CLOUDFLARE_ACCOUNT_ID`). Uploads go through the Cloudflare R2 REST API. When unset, the S3 keys below are used. |
 | `DAISY_SKETCH_PUBLIC_BASE_URL` | no | Defaults to `https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev`. |
-| `CLOUDFLARE_R2_*` / `R2_*` | for uploads | The existing R2 credentials (`src/lib/r2/config.ts`). The key must be allowed to **write** the `daisy-sketches` bucket. Without them, `imageUrl` still works and uploads return `upload_failed: r2_not_configured`. |
+| `CLOUDFLARE_R2_*` / `R2_*` | fallback for uploads | The existing R2 credentials (`src/lib/r2/config.ts`). The key must be allowed to **write** the `daisy-sketches` bucket. Without them, `imageUrl` still works and uploads return `upload_failed: r2_not_configured`. |
 
 Requests share the `inbound` rate limit with the webhooks. Bad or missing token → `401`; no tokens configured → `503`.
 

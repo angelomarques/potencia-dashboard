@@ -17,7 +17,12 @@ export function sketchStorageConfig() {
   return {
     bucket: process.env.DAISY_SKETCH_R2_BUCKET?.trim() || DEFAULT_SKETCH_BUCKET,
     publicBase: (process.env.DAISY_SKETCH_PUBLIC_BASE_URL?.trim() || DEFAULT_SKETCH_PUBLIC_BASE).replace(/\/$/, ""),
-    configured: r2Configured(),
+    /** Cloudflare API token with R2 write on the sketch bucket (preferred; S3 keys are the fallback). */
+    cfApiToken: process.env.DAISY_SKETCH_CF_API_TOKEN?.trim() || undefined,
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID?.trim() || process.env.R2_ACCOUNT_ID?.trim() || undefined,
+    get configured() {
+      return Boolean(this.cfApiToken && this.accountId) || r2Configured();
+    },
   };
 }
 
@@ -62,7 +67,17 @@ export const uploadSketchImage: UploadSketchImage = async (input) => {
   const cfg = sketchStorageConfig();
   if (!cfg.configured) throw new Error("r2_not_configured");
   const key = sketchKey({ ...input, filename: withExtension(input.filename, input.mime) });
-  await putR2Object({
+  if (cfg.cfApiToken && cfg.accountId) {
+    const res = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${cfg.accountId}/r2/buckets/${encodeURIComponent(cfg.bucket)}/objects/${key.split("/").map(encodeURIComponent).join("/")}`,
+      {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${cfg.cfApiToken}`, "Content-Type": input.mime },
+        body: new Uint8Array(input.bytes),
+      }
+    );
+    if (!res.ok) throw new Error(`r2_put_failed: ${res.status}`);
+  } else await putR2Object({
     bucket: cfg.bucket,
     key,
     body: input.bytes,
