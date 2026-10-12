@@ -116,10 +116,11 @@ export const appRouter = {
       .input(
         z.object({
           sketchId: z.string().min(1),
+          projectId: z.string().min(1).optional(),
         })
       )
       .handler(async ({ input }) => {
-        const { sketch, rejectedSketchIds } = await chooseSketch(input.sketchId);
+        const { sketch, rejectedSketchIds } = await chooseSketch(input.sketchId, input.projectId);
 
         await emitOutbound("owner.sketch_chosen", {
           projectId: sketch.projectId,
@@ -135,13 +136,14 @@ export const appRouter = {
       .input(
         z.object({
           sketchId: z.string().min(1),
+          projectId: z.string().min(1).optional(),
           body: z.string().min(1).max(2000),
           x: z.number().min(0).max(1).nullish(),
           y: z.number().min(0).max(1).nullish(),
         })
       )
       .handler(async ({ input }) => {
-        const sketch = await getSketch(input.sketchId);
+        const sketch = await getSketch(input.sketchId, input.projectId);
         if (!sketch) {
           throw new ORPCError("NOT_FOUND", { message: "Sketch not found" });
         }

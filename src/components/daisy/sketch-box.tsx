@@ -39,7 +39,10 @@ export function SketchBox({ sketch, comments = [], groupInfo }: SketchBoxProps) 
     if (sketch.status !== "proposed") return;
     try {
       setIsChoosing(true);
-      await orpc.daisy.chooseSketch({ sketchId: sketch.id });
+      await orpc.daisy.chooseSketch({
+        sketchId: sketch.id,
+        projectId: sketch.projectId,
+      });
       toast.success(`Chosen sketch: ${sketch.label}`);
       router.refresh();
     } catch (err: unknown) {
@@ -59,6 +62,7 @@ export function SketchBox({ sketch, comments = [], groupInfo }: SketchBoxProps) 
       setIsSubmittingComment(true);
       await orpc.daisy.addComment({
         sketchId: sketch.id,
+        projectId: sketch.projectId,
         body: text,
       });
       setCommentText("");
@@ -212,14 +216,17 @@ export function SketchBox({ sketch, comments = [], groupInfo }: SketchBoxProps) 
                 <div
                   key={comment.id}
                   data-testid="sketch-comment"
-                  className="rounded bg-muted/60 px-2.5 py-1.5 text-xs text-foreground border border-border/40"
+                  className="rounded bg-muted/60 px-2.5 py-1.5 text-xs text-foreground border border-border/40 space-y-0.5"
                 >
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-foreground">
+                    <span>{comment.author || "Owner"}</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      {comment.createdAt
+                        ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })
+                        : ""}
+                    </span>
+                  </div>
                   <p className="whitespace-pre-wrap">{comment.body}</p>
-                  <span className="text-[10px] text-muted-foreground">
-                    {comment.createdAt
-                      ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })
-                      : ""}
-                  </span>
                 </div>
               ))}
             </div>

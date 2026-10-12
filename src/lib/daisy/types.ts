@@ -42,15 +42,34 @@ export type DaisySketch = {
   createdAt: number;
 };
 
+export type DaisySketchUpsertInput = {
+  id: string;
+  projectId: string;
+  groupId?: string | null;
+  section?: string | null;
+  label: string;
+  kind?: DaisySketchKind;
+  imageUrl?: string | null;
+  url?: string | null;
+};
+
 export type DaisyComment = {
   id: string;
   projectId: string;
   sketchId: string; // pinned to this sketch
+  author?: string;
   body: string;
-  x: number | null; // optional pin position 0..1
+  x: number | null; // optional pin position 0..1, null when not pinned
   y: number | null;
   createdAt: number;
 };
+
+export class DaisySketchConflictError extends Error {
+  constructor(message = "Sketch conflict") {
+    super(message);
+    this.name = "DaisySketchConflictError";
+  }
+}
 
 export type DaisyGateStatus = "open" | "continued" | "submitted";
 export type DaisyGate = {
@@ -126,7 +145,7 @@ export const sketchData = z.object({
   groupId: z.string().max(128).nullish(),
   section: z.string().max(200).nullish(),
   label: z.string().min(1).max(200),
-  kind: z.enum(["card", "slide"]).default("card"),
+  kind: z.enum(["card", "slide"]).optional(),
   imageUrl: httpsUrl.nullish(),
   url: httpsUrl.nullish(),
 }).refine((d) => d.imageUrl || d.url, "imageUrl or url required");
@@ -144,6 +163,7 @@ export const INBOUND_EVENT_TYPES = [
   "project.upserted",
   "message.created",
   "sketch.created",
+  "sketch.updated",
   "section.ready",
   "preview.updated",
 ] as const;
@@ -153,6 +173,7 @@ export const inboundEventSchema = z.discriminatedUnion("type", [
   inboundEnvelope("project.upserted", projectUpsertData),
   inboundEnvelope("message.created", messageData),
   inboundEnvelope("sketch.created", sketchData),
+  inboundEnvelope("sketch.updated", sketchData),
   inboundEnvelope("section.ready", sectionReadyData),
   inboundEnvelope("preview.updated", previewData),
 ]);
@@ -168,10 +189,20 @@ export const OUTBOUND_EVENT_TYPES = [
 ] as const;
 export type OutboundEventType = (typeof OUTBOUND_EVENT_TYPES)[number];
 
+export const ownerCommentPayloadSchema = z.object({
+  projectId: z.string().min(1).max(128),
+  sketchId: z.string().min(1).max(128),
+  commentId: z.string().min(1).max(128),
+  body: z.string().min(1).max(2000),
+  x: z.number().min(0).max(1).nullable(),
+  y: z.number().min(0).max(1).nullable(),
+});
+export type OwnerCommentPayload = z.infer<typeof ownerCommentPayloadSchema>;
+
 export type OutboundPayloads = {
   "owner.message": { projectId: string; messageId: string; body: string };
   "owner.sketch_chosen": { projectId: string; sketchId: string; groupId: string | null; rejectedSketchIds: string[] };
-  "owner.comment": { projectId: string; sketchId: string; commentId: string; body: string; x: number | null; y: number | null };
+  "owner.comment": OwnerCommentPayload;
   "owner.gate_submitted": {
     projectId: string; gateId: string; section: string; notes: string | null;
     references: (DaisyReference & { url: string | null })[]; // url = presigned GET (short-lived) when R2 configured

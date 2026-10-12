@@ -70,6 +70,11 @@ describe("Daisy Inbound Webhooks", () => {
       addSketch: async (input) => {
         const sketch = {
           ...input,
+          groupId: input.groupId ?? null,
+          section: input.section ?? null,
+          kind: input.kind ?? ("card" as const),
+          imageUrl: input.imageUrl ?? null,
+          url: input.url ?? null,
           status: "proposed" as const,
           createdAt: Date.now(),
         };

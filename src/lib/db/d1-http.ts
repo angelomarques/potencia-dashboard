@@ -71,9 +71,11 @@ export async function d1Batch(
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(
-        statements.map((s) => ({ sql: s.sql, params: s.params ?? [] })),
-      ),
+      // D1 /query takes ONE object, never a bare array. The documented
+      // { batch: [...] } form keeps per-statement params and runs atomically.
+      body: JSON.stringify({
+        batch: statements.map((s) => ({ sql: s.sql, params: s.params ?? [] })),
+      }),
       cache: "no-store",
     },
   );
@@ -82,4 +84,6 @@ export async function d1Batch(
     const msg = data.errors?.[0]?.message ?? `D1 batch failed (${res.status})`;
     throw new Error(msg);
   }
+  const bad = data.result?.findIndex((r) => r.success === false) ?? -1;
+  if (bad !== -1) throw new Error(`D1 batch failed at statement ${bad + 1}`);
 }

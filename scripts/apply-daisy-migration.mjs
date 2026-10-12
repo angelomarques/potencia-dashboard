@@ -2,6 +2,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { splitSql, hasCompositePk, runD1Statements, LEFTOVER_CLEANUP } from "./d1-migrate-lib.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
@@ -14,53 +15,67 @@ function requireEnv(name, ...alts) {
   throw new Error(`Missing env: ${[name, ...alts].join(" / ")}`);
 }
 
-function splitSql(raw) {
-  const noLineComments = raw
-    .split("\n")
-    .map((line) => {
-      const t = line.trim();
-      if (t.startsWith("--")) return "";
-      return line;
-    })
-    .join("\n");
-  return noLineComments
-    .split(";")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-}
-
 async function main() {
-  const sqlPath = resolve(root, "migrations/0003_daisy.sql");
-  const statements = splitSql(await readFile(sqlPath, "utf8"));
-  const accountId = requireEnv("CLOUDFLARE_ACCOUNT_ID");
-  const dbId = requireEnv("D1_DATABASE_ID", "CLOUDFLARE_D1_DATABASE_ID");
-  const token = requireEnv("CLOUDFLARE_API_TOKEN");
-  const baseUrl = (process.env.D1_HTTP_BASE_URL?.trim() || "https://api.cloudflare.com/client/v4").replace(/\/+$/, "");
+  const migrationFiles = [
+    "migrations/0003_daisy.sql",
+    "migrations/0004_daisy_sketch_scope.sql",
+  ];
+  const conn = {
+    accountId: requireEnv("CLOUDFLARE_ACCOUNT_ID"),
+    dbId: requireEnv("D1_DATABASE_ID", "CLOUDFLARE_D1_DATABASE_ID"),
+    token: requireEnv("CLOUDFLARE_API_TOKEN"),
+    baseUrl: (process.env.D1_HTTP_BASE_URL?.trim() || "https://api.cloudflare.com/client/v4").replace(/\/+$/, ""),
+  };
 
-  console.log(`Applying ${statements.length} statements to D1…`);
-  for (let i = 0; i < statements.length; i++) {
-    const sql = statements[i] + ";";
-    const res = await fetch(
-      `${baseUrl}/accounts/${accountId}/d1/database/${dbId}/query`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ sql }),
-      },
-    );
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      const msg = data.errors?.[0]?.message ?? `status ${res.status}`;
-      console.error(`Statement ${i + 1} FAILED: ${msg}`);
-      console.error(sql.slice(0, 240));
+  // Every request is ONE JSON object { sql: "s1;\ns2;..." } — D1 /query
+  // rejects array bodies. D1 runs a multi-statement sql string as a batch
+  // (one transaction; a failing statement rolls the whole request back) and
+  // returns one result per statement.
+
+  // Rerun safety: a previous partial run may have left *_new tables behind.
+  // A leftover daisy_comments_new whose FK points at the old daisy_sketches
+  // makes SQLite raise "foreign key mismatch" on ANY later write touching
+  // daisy_sketches (even 0003), so drop leftovers in their own request first.
+  try {
+    await runD1Statements(conn, LEFTOVER_CLEANUP);
+  } catch (err) {
+    console.error(`Leftover *_new cleanup FAILED: ${err.message}`);
+    process.exit(1);
+  }
+  console.log("OK leftover *_new tables dropped (if any)");
+
+  for (const rel of migrationFiles) {
+    if (rel.includes("0004")) {
+      let tableSql;
+      try {
+        const [check] = await runD1Statements(conn, [
+          "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'daisy_sketches' LIMIT 1",
+        ]);
+        tableSql = check?.results?.[0]?.sql;
+      } catch (err) {
+        console.error(`Schema check FAILED for ${rel}: ${err.message}`);
+        process.exit(1);
+      }
+      if (typeof tableSql !== "string") {
+        console.error(`Schema check FAILED for ${rel}: daisy_sketches not found`);
+        process.exit(1);
+      }
+      if (hasCompositePk(tableSql)) {
+        console.log(`SKIP migration ${rel}: already applied (composite PRIMARY KEY present)`);
+        continue;
+      }
+    }
+
+    const statements = splitSql(await readFile(resolve(root, rel), "utf8"));
+    console.log(`Applying ${statements.length} statements from ${rel} to D1 as one request…`);
+    try {
+      await runD1Statements(conn, statements);
+    } catch (err) {
+      console.error(`Batch FAILED for ${rel} (rolled back by D1): ${err.message}`);
       process.exit(1);
     }
-    console.log(`OK ${i + 1}/${statements.length}`);
+    console.log(`PASS migration ${rel} applied`);
   }
-  console.log("PASS migration 0003_daisy applied");
 }
 
 main().catch((e) => {

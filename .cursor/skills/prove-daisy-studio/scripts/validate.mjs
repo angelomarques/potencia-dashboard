@@ -12,15 +12,18 @@ async function post(path,evt,{ts=Math.floor(Date.now()/1000),badSig=false}={}){
 const id=()=>"evt_"+crypto.randomUUID();
 // ---- Seed via signed inbound webhooks ----
 const P="lawa-landing", P2="eo-shop";
-const seed=[
- ["/api/daisy/webhooks/project",{id:id(),type:"project.upserted",data:{projectId:P,name:"Lawa — landing page",status:"active",summary:"Marketing landing for Lawa",currentSection:"Hero"}}],
- ["/api/daisy/webhooks/project",{id:id(),type:"project.upserted",data:{projectId:P2,name:"Empire Oddities shop",status:"done",summary:"Merch storefront",currentSection:"Footer"}}],
- ["/api/daisy/webhooks/message",{id:id(),type:"message.created",data:{projectId:P,body:"Oi Ângelo! I drafted two hero directions. Pick one and pin any tweaks to the sketch."}}],
- ["/api/daisy/webhooks/sketch",{id:id(),type:"sketch.created",data:{projectId:P,sketchId:"sk-hero-a",groupId:"hero",section:"Hero",label:"Hero A — bold gradient",kind:"card",imageUrl:"https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A"}}],
- ["/api/daisy/webhooks/sketch",{id:id(),type:"sketch.created",data:{projectId:P,sketchId:"sk-hero-b",groupId:"hero",section:"Hero",label:"Hero B — photo split",kind:"slide",imageUrl:"https://placehold.co/640x360/0ea5e9/ffffff/png?text=Hero+B"}}],
- ["/api/daisy/webhooks/preview",{id:id(),type:"preview.updated",data:{projectId:P,previewUrl:"https://next-blog-starter.vercel.app"}}],
-];
-for (const [p,e] of seed){ const r=await post(p,e); check(`inbound ${e.type}`, r.status===200, String(r.status)); }
+ const seed=[
+  ["/api/daisy/webhooks/project",{id:id(),type:"project.upserted",data:{projectId:P,name:"Lawa — landing page",status:"active",summary:"Marketing landing for Lawa",currentSection:"Hero"}}],
+  ["/api/daisy/webhooks/project",{id:id(),type:"project.upserted",data:{projectId:P2,name:"Empire Oddities shop",status:"done",summary:"Merch storefront",currentSection:"Footer"}}],
+  ["/api/daisy/webhooks/message",{id:id(),type:"message.created",data:{projectId:P,body:"Oi Ângelo! I drafted two hero directions. Pick one and pin any tweaks to the sketch."}}],
+  ["/api/daisy/webhooks/sketch",{id:id(),type:"sketch.created",data:{projectId:P,sketchId:"sk-hero-a",groupId:"hero",section:"Hero",label:"Hero A — bold gradient",kind:"card",imageUrl:"https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A"}}],
+  ["/api/daisy/webhooks/sketch",{id:id(),type:"sketch.created",data:{projectId:P,sketchId:"sk-hero-b",groupId:"hero",section:"Hero",label:"Hero B — photo split",kind:"slide",imageUrl:"https://placehold.co/640x360/0ea5e9/ffffff/png?text=Hero+B"}}],
+  ["/api/daisy/webhooks/sketch-updated",{id:id(),type:"sketch.updated",data:{projectId:P,sketchId:"sk-hero-a",groupId:"hero",section:"Hero",label:"Hero A — bold gradient (updated)",kind:"card",imageUrl:"https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A+Updated"}}],
+  ["/api/daisy/webhooks/preview",{id:id(),type:"preview.updated",data:{projectId:P,previewUrl:"https://next-blog-starter.vercel.app"}}],
+ ];
+ for (const [p,e] of seed){ const r=await post(p,e); check(`inbound ${e.type}`, r.status===200, String(r.status)); }
+ const skUpUniv=await post("/api/daisy/webhooks",{id:id(),type:"sketch.updated",data:{projectId:P,sketchId:"sk-hero-b",groupId:"hero",section:"Hero",label:"Hero B — photo split (updated)",kind:"slide",imageUrl:"https://placehold.co/640x360/0ea5e9/ffffff/png?text=Hero+B+Updated"}});
+ check("webhook: sketch.updated accepted",skUpUniv.status===200,String(skUpUniv.status));
 // ---- Signature accept/reject ----
 const good={id:id(),type:"message.created",data:{projectId:P,body:"Signature test message"}};
 check("webhook: valid signature accepted",(await post("/api/daisy/webhooks",good)).status===200);
@@ -46,14 +49,32 @@ await page.goto(BASE+"/daisy"); await page.waitForSelector('[data-testid="daisy-
 const cards=await page.locator('[data-testid="daisy-project-card"]').count(); check("UI: projects list shows projects",cards===2,`cards=${cards}`);
 check("UI: nav link to /daisy in header",await page.locator('header a[href="/daisy"]').count()>0);
 await shot("01-projects-index");
-await page.goto(BASE+"/daisy/"+P); await page.waitForSelector('[data-testid="sketch-box"]');
-check("UI: thread shows messages + sketches",(await page.locator('[data-testid="thread-message"]').count())>=1 && (await page.locator('[data-testid="sketch-box"]').count())===2);
+await page.goto(BASE+"/daisy/"+P); await page.waitForSelector('[data-testid="daisy-slideshow"]');
+check("UI: thread shows messages + slideshow loaded",(await page.locator('[data-testid="thread-message"]').count())>=1 && (await page.locator('[data-testid="daisy-slideshow"]').count())===1);
+check("UI: slideshow controls and testids present",
+  (await page.locator('[data-testid="slide-counter"]').count())===1 &&
+  (await page.locator('[data-testid="slide-prev"]').count())===1 &&
+  (await page.locator('[data-testid="slide-next"]').count())===1 &&
+  (await page.locator('[data-testid="slideshow-dots"]').count())===1 &&
+  (await page.locator('[data-testid="slideshow-thumbnails"]').count())===1 &&
+  (await page.locator('[data-testid="sketch-comment-thread"]').count())===1 &&
+  (await page.locator('[data-testid="sketch-comment-input"]').count())===1
+);
 check("UI: allowed preview iframe rendered sandboxed",(await page.locator('iframe[data-testid="preview-iframe"][sandbox]').count())===1);
 await shot("02-project-thread-and-preview");
-await page.locator('[data-testid="choose-sketch"]').first().click(); await page.waitForFunction(()=>[...document.querySelectorAll('[data-testid="sketch-status"]')].some(e=>/chosen/i.test(e.textContent))&&[...document.querySelectorAll('[data-testid="sketch-status"]')].some(e=>/rejected/i.test(e.textContent)),null,{timeout:20000}).catch(()=>{});
-const st=(await page.locator('[data-testid="sketch-status"]').allTextContents()).join("|"); check("UI: choose sketch -> chosen/rejected",/chosen/i.test(st)&&/rejected/i.test(st),st);
+await page.locator('[data-testid="choose-sketch"]').first().click();
+await page.waitForFunction(()=>[...document.querySelectorAll('[data-testid="sketch-status"]')].some(e=>/chosen/i.test(e.textContent)),null,{timeout:20000}).catch(()=>{});
+const st1=(await page.locator('[data-testid="sketch-status"]').allTextContents()).join("|");
+await page.locator('[data-testid="slide-next"]').click();
+await page.waitForTimeout(300);
+const st2=(await page.locator('[data-testid="sketch-status"]').allTextContents()).join("|");
+const st=`${st1}|${st2}`;
+check("UI: choose sketch -> chosen/rejected",/chosen/i.test(st1)&&/rejected/i.test(st2),st);
+await page.locator('[data-testid="slide-prev"]').click();
+await page.waitForTimeout(300);
 await shot("03-sketch-chosen");
-await page.locator('[data-testid="comment-input"]').first().fill("Make the CTA button larger and use the brand pink.");
+await page.locator('[data-testid="daisy-slideshow"] img').first().click({position:{x:60,y:60}}).catch(()=>{});
+await page.locator('[data-testid="sketch-comment-input"], [data-testid="comment-input"]').first().fill("Make the CTA button larger and use the brand pink.");
 await page.locator('[data-testid="comment-submit"]').first().click(); await page.waitForSelector('[data-testid="sketch-comment"]');
 check("UI: pinned comment on sketch",(await page.locator('[data-testid="sketch-comment"]').count())>=1);
 await shot("04-pinned-comment");

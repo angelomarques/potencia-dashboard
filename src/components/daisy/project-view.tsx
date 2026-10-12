@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Layers, MessageSquare, Monitor, Palette } from "lucide-react";
 import { ThreadMessage } from "./thread-message";
-import { SketchBox } from "./sketch-box";
 import { GateBox } from "./gate-box";
 import { ThreadComposer } from "./thread-composer";
 import { PreviewPanel } from "./preview-panel";
-import type { DaisyGate, DaisyProject, DaisySketch, DaisyThreadItem } from "@/lib/daisy/types";
+import { SketchSlideshow, type SketchSlideItem } from "./sketch-slideshow";
+import type { DaisyGate, DaisyProject, DaisyThreadItem } from "@/lib/daisy/types";
 
 interface ProjectViewProps {
   project: DaisyProject;
@@ -25,29 +25,21 @@ export function ProjectView({
   openGate,
   isAllowedPreview,
 }: ProjectViewProps) {
-  // Mobile tab state: "thread" or "preview"
-  const [activeTab, setActiveTab] = useState<"thread" | "preview">("thread");
+  // Toggle between "slideshow" and "preview" for the main display
+  const [activeView, setActiveView] = useState<"slideshow" | "preview">("slideshow");
 
-  // Pre-calculate group counts and indices for sketches to display "Option N of M"
-  const sketchesByGroup = new Map<string, DaisySketch[]>();
-  thread.forEach((item) => {
-    if (item.type === "sketch" && item.sketch.groupId) {
-      const list = sketchesByGroup.get(item.sketch.groupId) || [];
-      list.push(item.sketch);
-      sketchesByGroup.set(item.sketch.groupId, list);
-    }
-  });
+  // Extract sketch items with their comments
+  const sketchItems: SketchSlideItem[] = thread
+    .filter((item): item is DaisyThreadItem & { type: "sketch" } => item.type === "sketch")
+    .map((item) => ({
+      sketch: item.sketch,
+      comments: item.comments,
+    }));
 
-  const getGroupInfo = (sketch: DaisySketch) => {
-    if (!sketch.groupId) return null;
-    const group = sketchesByGroup.get(sketch.groupId);
-    if (!group || group.length <= 1) return null;
-    const index = group.findIndex((s) => s.id === sketch.id);
-    return {
-      index: index >= 0 ? index + 1 : 1,
-      total: group.length,
-    };
-  };
+  // Extract chat items (messages & gates)
+  const chatItems = thread.filter(
+    (item) => item.type === "message" || item.type === "gate"
+  );
 
   const hasOpenGateInThread = openGate
     ? thread.some((item) => item.type === "gate" && item.gate.id === openGate.id)
@@ -95,63 +87,96 @@ export function ProjectView({
           </div>
         </div>
 
-        {/* Mobile Tab Toggle buttons */}
-        <div className="flex items-center gap-1 rounded-lg bg-muted p-1 lg:hidden">
+        {/* View Switcher: Slideshow vs Live Preview */}
+        <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
           <Button
-            variant={activeTab === "thread" ? "default" : "ghost"}
+            data-testid="tab-slideshow"
+            variant={activeView === "slideshow" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setActiveTab("thread")}
-            className="h-7 text-xs flex-1 gap-1.5"
+            onClick={() => setActiveView("slideshow")}
+            className={`h-7 text-xs gap-1.5 ${
+              activeView === "slideshow"
+                ? "bg-background text-foreground shadow-xs hover:bg-background"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
           >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Thread ({thread.length})
+            <Palette className="h-3.5 w-3.5 text-pink-500" />
+            <span>Slideshow</span>
+            {sketchItems.length > 0 && (
+              <span className="ml-0.5 rounded-full bg-pink-500/15 px-1.5 py-0.2 text-[10px] font-semibold text-pink-600 dark:text-pink-400">
+                {sketchItems.length}
+              </span>
+            )}
           </Button>
           <Button
-            variant={activeTab === "preview" ? "default" : "ghost"}
+            data-testid="preview-toggle"
+            variant={activeView === "preview" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setActiveTab("preview")}
-            className="h-7 text-xs flex-1 gap-1.5"
+            onClick={() =>
+              setActiveView((prev) => (prev === "preview" ? "slideshow" : "preview"))
+            }
+            className={`h-7 text-xs gap-1.5 ${
+              activeView === "preview"
+                ? "bg-background text-foreground shadow-xs hover:bg-background"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
           >
-            <Monitor className="h-3.5 w-3.5" />
-            Preview
+            <Monitor className="h-3.5 w-3.5 text-sky-500" />
+            <span>Live Preview</span>
           </Button>
         </div>
       </div>
 
-      {/* Main Two-Column Layout */}
+      {/* Main Layout: Slideshow/Preview on left (or top on mobile), Chat beside on lg+ (or below on mobile) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
-        {/* Left Column: Thread (Messages, Sketches, Gates) & Composer */}
-        <div
-          className={`lg:col-span-7 flex flex-col rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden ${
-            activeTab === "thread" ? "block" : "hidden lg:flex"
-          }`}
-        >
-          {/* Thread Content Area */}
-          <div className="flex-1 p-4 md:p-5 overflow-y-auto min-h-[500px] max-h-[calc(100vh-280px)] space-y-2">
-            {thread.length === 0 && !openGate ? (
-              <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
-                <Palette className="h-8 w-8 text-pink-500/50 mb-2" />
-                <p className="text-sm font-medium text-foreground">Studio Thread Started</p>
-                <p className="text-xs max-w-sm mt-1">
-                  No messages or sketches yet. Send a message below to kick off design ideas with Daisy!
+        {/* Left Column: Sketch Slideshow or Live Preview */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+          <div className={activeView === "slideshow" ? "block" : "hidden"}>
+            <SketchSlideshow
+              projectId={project.id}
+              items={sketchItems}
+            />
+          </div>
+
+          <div className={activeView === "preview" ? "block" : "hidden"}>
+            <PreviewPanel
+              previewUrl={project.previewUrl}
+              isAllowed={isAllowedPreview}
+            />
+          </div>
+        </div>
+
+        {/* Right Column: Chat (Messages & Gates) beside slideshow on lg+, below on mobile */}
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
+          {/* Chat Header */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60 bg-muted/20">
+            <div className="flex items-center gap-1.5">
+              <MessageSquare className="h-4 w-4 text-pink-500" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Design Chat
+              </h2>
+            </div>
+            <span className="text-[11px] text-muted-foreground">
+              {chatItems.length} item{chatItems.length === 1 ? "" : "s"}
+            </span>
+          </div>
+
+          {/* Chat Content Area */}
+          <div className="flex-1 p-4 md:p-5 overflow-y-auto min-h-[380px] max-h-[calc(100vh-280px)] space-y-2.5">
+            {chatItems.length === 0 && !openGate ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+                <MessageSquare className="h-7 w-7 text-pink-500/50 mb-2" />
+                <p className="text-sm font-medium text-foreground">Studio Thread</p>
+                <p className="text-xs max-w-xs mt-1">
+                  Send a message below to coordinate design work with Daisy!
                 </p>
               </div>
             ) : (
               <>
-                {thread.map((item, idx) => {
+                {chatItems.map((item, idx) => {
                   if (item.type === "message") {
                     return (
                       <ThreadMessage key={item.message.id || idx} message={item.message} />
-                    );
-                  }
-                  if (item.type === "sketch") {
-                    return (
-                      <SketchBox
-                        key={item.sketch.id || idx}
-                        sketch={item.sketch}
-                        comments={item.comments}
-                        groupInfo={getGroupInfo(item.sketch)}
-                      />
                     );
                   }
                   if (item.type === "gate") {
@@ -176,20 +201,6 @@ export function ProjectView({
 
           {/* Composer at bottom */}
           <ThreadComposer projectId={project.id} />
-        </div>
-
-        {/* Right Column: Preview Panel */}
-        <div
-          className={`lg:col-span-5 ${
-            activeTab === "preview" ? "block" : "hidden lg:block"
-          }`}
-        >
-          <div className="sticky top-20">
-            <PreviewPanel
-              previewUrl={project.previewUrl}
-              isAllowed={isAllowedPreview}
-            />
-          </div>
         </div>
       </div>
     </div>

@@ -63,6 +63,7 @@ Or use dedicated sub-routes:
 - `POST /api/daisy/webhooks/project` (`project.upserted`)
 - `POST /api/daisy/webhooks/message` (`message.created`)
 - `POST /api/daisy/webhooks/sketch` (`sketch.created`)
+- `POST /api/daisy/webhooks/sketch-updated` (`sketch.updated`)
 - `POST /api/daisy/webhooks/section-ready` (`section.ready`)
 - `POST /api/daisy/webhooks/preview` (`preview.updated`)
 
@@ -150,6 +151,14 @@ Daisy uploads alternative UI sketches/cards for the owner to choose from.
 - `url`: optional https URL (must start with `https://`, max 2048 chars).
 - *Constraint*: At least one of `imageUrl` or `url` is required.
 
+**Scoping & upsert semantics**
+- `sketchId` is Daisy's own id and is unique per **(projectId, sketchId)**. The same `sketchId` in a different project creates a separate sketch.
+- `sketch.created` is an **UPSERT** on `(projectId, sketchId)`: a *new* event id for an existing sketch updates `label`, `imageUrl`, `url` (and `groupId`, `section`, `kind`) and keeps its status and comments.
+- Replaying the *same* event id is deduped (`200 {"ok":true,"duplicate":true}`), never re-applied.
+
+#### 3b. `sketch.updated`
+Same payload shape as `sketch.created` (`"type": "sketch.updated"`, endpoint `POST /api/daisy/webhooks/sketch` or the generic `/api/daisy/webhooks`). Behaves as the same upsert on `(projectId, sketchId)`; use it when Daisy revises an existing sketch.
+
 #### 4. `section.ready`
 Daisy indicates a section is complete and opens a handoff gate for the owner.
 ```json
@@ -221,8 +230,13 @@ For security, live preview URLs rendered in the dashboard iframe are strictly va
 | `422` | `invalid_payload` | Payload validation failed (Zod schema mismatch). |
 | `422` | `type_mismatch` | Event type in body does not match sub-route endpoint. |
 | `422` | `preview_origin_not_allowed` | Preview URL hostname is not allowlisted. |
+| `409` | `sketch_conflict` | Genuine database conflict while writing a sketch (returns JSON `{ "error": "sketch_conflict" }`, never an empty 500). Safe to retry with a new event id. |
 | `429` | `rate_limited` | Rate limit exceeded. Read `Retry-After` header for seconds to wait. |
+| `500` | `internal_error` | Unexpected server error; always returned as a JSON body (`{ "error": "internal_error" }`). |
 | `503` | `daisy_not_configured` | Required environment variable (e.g. `DAISY_WEBHOOK_SECRET`, `DAISY_PULL_TOKEN`) is not configured. |
+
+> [!NOTE]
+> All errors, including `409` (`sketch_conflict`) and `500` (`internal_error`), are returned as structured JSON bodies (`{"error": "<code_name>"}`) with their corresponding HTTP status codes, rather than HTML or unhandled crashes.
 
 ---
 
@@ -281,7 +295,11 @@ Owner pinned a feedback comment to a specific position on a sketch.
   "y": 0.12
 }
 ```
-- `x`, `y`: Relative coordinates between `0.0` and `1.0`, or `null`.
+- `sketchId` is Daisy's own sketch id (as sent in `sketch.created`), scoped to `projectId`.
+- `x`, `y`: Relative coordinates between `0.0` and `1.0`, or both `null` for an unpinned comment typed in the per-slide thread:
+```json
+{ "projectId": "proj_brand_refresh", "sketchId": "sketch_opt_a", "commentId": "comm_992", "body": "Love this palette.", "x": null, "y": null }
+```
 
 #### 4. `owner.gate_submitted`
 Owner resolved a section handoff gate by providing reference assets and/or feedback notes.
@@ -561,3 +579,18 @@ curl -s -X POST "https://dashboard.potenciaapps.com.br/api/daisy/events/ack" \
   -H "Content-Type: application/json" \
   -d '{"upTo": 42}'
 ```
+
+---
+
+## 11. Database Migration 0004 (Sketch Scope) & Pre-Deploy
+
+`migrations/0004_daisy_sketch_scope.sql` rebuilds `daisy_sketches` with `PRIMARY KEY (project_id, id)` and `daisy_comments` with a composite foreign key, copying all existing rows. This scopes sketches per project and enables atomic upserts (`ON CONFLICT(project_id, id) DO UPDATE`).
+
+### Pre-Deploy Requirement
+Always run `pnpm db:migrate:daisy` before deploy:
+
+```bash
+pnpm db:migrate:daisy
+```
+
+The migration runner (`scripts/apply-daisy-migration.mjs`) connects to D1, verifies `sqlite_master` for the composite primary key on `daisy_sketches`, and automatically skips `migrations/0004_daisy_sketch_scope.sql` if it is already applied, ensuring safe and idempotent deployments.
