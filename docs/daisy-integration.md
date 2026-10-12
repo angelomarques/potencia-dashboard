@@ -12,6 +12,8 @@ Communication between Daisy and the Potencia Dashboard is bidirectional, authent
 2. **Outbound Push (Dashboard → Daisy)**: The dashboard immediately POSTs signed webhook envelopes to `DAISY_WEBHOOK_URL` whenever the owner takes an action. Failed deliveries are retried using exponential backoff.
 3. **Outbound Pull & Reconcile (Daisy → Dashboard)**: Daisy can pull outbound events via `GET /api/daisy/events?after=<seq>` authenticated by `DAISY_PULL_TOKEN`. Events remain pullable until acknowledged via `POST /api/daisy/events/ack` (even if already delivered via push). Daisy **must deduplicate** events by `id`.
 
+> **Coding agents:** use the MCP endpoint `/api/mcp` instead of signing webhooks by hand. See [daisy-mcp.md](./daisy-mcp.md).
+
 ---
 
 ## 2. Environment Variables

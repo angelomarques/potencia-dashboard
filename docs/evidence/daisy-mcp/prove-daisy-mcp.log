@@ -1,0 +1,29 @@
+PASS auth: no token -> 401 
+PASS auth: wrong token -> 401 
+PASS tools/list (cursor token) get_feedback,list_projects,post_message,push_sketch,update_sketch,upsert_project
+PASS tools/list (antigravity token) 
+PASS upsert_project {
+  "ok": true,
+  "id": "mcp_cursor_efdeb051-a8f1-4d52-87c4-0eb41267b21f",
+  "type": "project.upserted",
+  "projectId": 
+PASS list_projects contains project 
+PASS push_sketch (imageUrl) 
+PASS push_sketch (base64 -> R2 daisy-sketches) mcp-prove-mv5n93ox/r1/hero-b.png https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/hero-b.png
+PASS R2 object exists (HeadObject, substitute bucket) image/png 100699
+PASS update_sketch (partial; keeps image) 
+PASS update_sketch unknown sketch -> tool error 
+PASS push_sketch rejects http image 
+PASS post_message 
+PASS post_message idempotent (duplicate:true) 
+PASS post_message from second agent 
+PASS get_feedback before owner input: no owner messages/comments 
+PASS stdio proxy lists push_sketch with filePath 
+PASS stdio push_sketch filePath -> R2 mcp-prove-mv5n93ox/r1/mcp-sample.png
+PASS UI: agent messages rendered (attributed) n=2
+PASS UI: slideshow shows 3 MCP sketches 1 / 3
+PASS get_feedback: owner chat message 
+PASS get_feedback: sketch comment 
+PASS get_feedback: chosen/rejected statuses hero-a:rejected,hero-b:chosen,hero-c:rejected
+PASS get_feedback: cursor => nothing new 
+ALL PASS

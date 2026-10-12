@@ -1,0 +1,148 @@
+[
+  {
+    "tool": "upsert_project",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "name": "MCP prove — landing",
+      "summary": "Pushed by coding agents via /api/mcp",
+      "currentSection": "Hero"
+    },
+    "isError": false,
+    "result": "{\n  \"ok\": true,\n  \"id\": \"mcp_cursor_efdeb051-a8f1-4d52-87c4-0eb41267b21f\",\n  \"type\": \"project.upserted\",\n  \"projectId\": \"mcp-prove-mv5n93ox\"\n}"
+  },
+  {
+    "tool": "list_projects",
+    "args": {},
+    "isError": false,
+    "result": "{\n  \"projects\": [\n    {\n      \"id\": \"mcp-prove-mv5n93ox\",\n      \"name\": \"MCP prove — landing\",\n      \"status\": \"active\",\n      \"summary\": \"Pushed by coding agents via /api/mcp\",\n      \"currentSection\": \"Hero\"\n    },\n    {\n      \"id\": \"mcp-prove-mv5n8ats\",\n      \"name\": \"MCP prove — landing\",\n      \"status\": \"active\",\n      \"summary\": \"Pushed by coding agents via /api/mcp\",\n      \"currentSection\": \"Hero\"\n    },\n    {\n      \"id\": \"mcp-prove-mv5n6h81\",\n      \"name\": \"MCP prove — landing\",\n      \"status\": \"active\",\n      \"summary\": \"Pushed by coding agents via /api/mcp\",\n      \"currentSection\": \"Hero\"\n    },\n    {\n      \"id\": \"mcp-prove-mv5n5lzq\",\n      \"name\": \"MCP prove — landing\",\n      \"status\": \"active\",\n      \"summary\": \"Pushed by coding agents via /api/mcp\",\n      \"currentSection\": \"Hero\"\n    }\n  ]\n}"
+  },
+  {
+    "tool": "push_sketch",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "sketchId": "hero-a",
+      "groupId": "hero",
+      "section": "Hero",
+      "label": "Hero A — bold gradient",
+      "kind": "card",
+      "imageUrl": "https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A+(MCP)"
+    },
+    "isError": false,
+    "result": "{\n  \"ok\": true,\n  \"id\": \"mcp_cursor_d7c2a275-ec74-4813-b89f-5a554525038f\",\n  \"type\": \"sketch.created\",\n  \"projectId\": \"mcp-prove-mv5n93ox\",\n  \"sketchId\": \"hero-a\",\n  \"imageUrl\": \"https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A+(MCP)\"\n}"
+  },
+  {
+    "tool": "push_sketch",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "sketchId": "hero-b",
+      "groupId": "hero",
+      "section": "Hero",
+      "label": "Hero B — uploaded via base64",
+      "kind": "card",
+      "round": "r1",
+      "filename": "hero-b",
+      "imageBase64": "<134290 chars>"
+    },
+    "isError": false,
+    "result": "{\n  \"ok\": true,\n  \"id\": \"mcp_cursor_18181e90-01ce-4da8-8fbc-af8385605c86\",\n  \"type\": \"sketch.created\",\n  \"projectId\": \"mcp-prove-mv5n93ox\",\n  \"sketchId\": \"hero-b\",\n  \"imageUrl\": \"https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/hero-b.png\",\n  \"storageKey\": \"mcp-prove-mv5n93ox/r1/hero-b.png\"\n}"
+  },
+  {
+    "tool": "update_sketch",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "sketchId": "hero-a",
+      "label": "Hero A — bold gradient (v2)"
+    },
+    "isError": false,
+    "result": "{\n  \"ok\": true,\n  \"id\": \"mcp_cursor_7918421b-7fe7-4871-b628-3b2c56e4d552\",\n  \"type\": \"sketch.updated\",\n  \"projectId\": \"mcp-prove-mv5n93ox\",\n  \"sketchId\": \"hero-a\"\n}"
+  },
+  {
+    "tool": "update_sketch",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "sketchId": "missing",
+      "label": "x"
+    },
+    "isError": true,
+    "result": "sketch_not_found: mcp-prove-mv5n93ox/missing"
+  },
+  {
+    "tool": "push_sketch",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "label": "bad",
+      "imageUrl": "http://insecure.example/a.png"
+    },
+    "isError": true,
+    "result": "MCP error -32602: Input validation error: Invalid arguments for tool push_sketch: must be https at imageUrl"
+  },
+  {
+    "tool": "post_message",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "idempotencyKey": "run-2ea48097",
+      "body": "Run finished: 2 hero directions (A gradient, B uploaded). Pick one and pin tweaks."
+    },
+    "isError": false,
+    "result": "{\n  \"ok\": true,\n  \"id\": \"mcp_cursor_run-2ea48097\",\n  \"type\": \"message.created\",\n  \"projectId\": \"mcp-prove-mv5n93ox\",\n  \"messageId\": \"mcp_cursor_run-2ea48097\"\n}"
+  },
+  {
+    "tool": "post_message",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "idempotencyKey": "run-2ea48097",
+      "body": "dup"
+    },
+    "isError": false,
+    "result": "{\n  \"ok\": true,\n  \"duplicate\": true,\n  \"projectId\": \"mcp-prove-mv5n93ox\",\n  \"messageId\": \"mcp_cursor_run-2ea48097\"\n}"
+  },
+  {
+    "tool": "post_message",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "body": "Antigravity here: also generated the mobile variant."
+    },
+    "isError": false,
+    "result": "{\n  \"ok\": true,\n  \"id\": \"mcp_antigravity_0dc40b2d-778a-4528-942f-b77c85fb0e9b\",\n  \"type\": \"message.created\",\n  \"projectId\": \"mcp-prove-mv5n93ox\",\n  \"messageId\": \"mcp_antigravity_9d61e077-d7a5-4033-9d6f-61b008067135\"\n}"
+  },
+  {
+    "tool": "get_feedback",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox"
+    },
+    "isError": false,
+    "result": "{\n  \"project\": {\n    \"id\": \"mcp-prove-mv5n93ox\",\n    \"name\": \"MCP prove — landing\",\n    \"status\": \"active\"\n  },\n  \"messages\": [],\n  \"sketches\": [\n    {\n      \"id\": \"hero-a\",\n      \"label\": \"Hero A — bold gradient (v2)\",\n      \"status\": \"proposed\",\n      \"groupId\": \"hero\",\n      \"section\": \"Hero\",\n      \"imageUrl\": \"https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A+(MCP)\",\n      \"comments\": []\n    },\n    {\n      \"id\": \"hero-b\",\n      \"label\": \"Hero B — uploaded via base64\",\n      \"status\": \"proposed\",\n      \"groupId\": \"hero\",\n      \"section\": \"Hero\",\n      \"imageUrl\": \"https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/hero-b.png\",\n      \"comments\": []\n    }\n  ],\n  \"gates\": [],\n  \"cursor\": 0,\n  \"hint\": \"Pass `cursor` as `since` next time to get only new feedback.\"\n}"
+  },
+  {
+    "tool": "push_sketch",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "sketchId": "hero-c",
+      "groupId": "hero",
+      "section": "Hero",
+      "label": "Hero C — local file via stdio",
+      "round": "r1",
+      "filePath": "/tmp/mcp-sample.png"
+    },
+    "isError": false,
+    "result": "{\n  \"ok\": true,\n  \"id\": \"mcp_antigravity_bb26f188-e8a2-47f7-92ec-fcf70983ae3d\",\n  \"type\": \"sketch.created\",\n  \"projectId\": \"mcp-prove-mv5n93ox\",\n  \"sketchId\": \"hero-c\",\n  \"imageUrl\": \"https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/mcp-sample.png\",\n  \"storageKey\": \"mcp-prove-mv5n93ox/r1/mcp-sample.png\"\n}"
+  },
+  {
+    "tool": "get_feedback",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "since": 0
+    },
+    "isError": false,
+    "result": "{\n  \"project\": {\n    \"id\": \"mcp-prove-mv5n93ox\",\n    \"name\": \"MCP prove — landing\",\n    \"status\": \"active\"\n  },\n  \"messages\": [\n    {\n      \"id\": \"676487e4-c181-4b3b-a1a9-882ac25d0c72\",\n      \"author\": \"owner\",\n      \"body\": \"Great run. Next: do the Features section.\",\n      \"at\": \"2026-10-12T19:27:37.886Z\"\n    }\n  ],\n  \"sketches\": [\n    {\n      \"id\": \"hero-a\",\n      \"label\": \"Hero A — bold gradient (v2)\",\n      \"status\": \"rejected\",\n      \"groupId\": \"hero\",\n      \"section\": \"Hero\",\n      \"imageUrl\": \"https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A+(MCP)\",\n      \"comments\": []\n    },\n    {\n      \"id\": \"hero-b\",\n      \"label\": \"Hero B — uploaded via base64\",\n      \"status\": \"chosen\",\n      \"groupId\": \"hero\",\n      \"section\": \"Hero\",\n      \"imageUrl\": \"https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/hero-b.png\",\n      \"comments\": [\n        {\n          \"id\": \"2ed0ad00-efd9-41fd-9339-2a21860663ba\",\n          \"author\": \"owner\",\n          \"body\": \"Love B — make the headline 20% bigger.\",\n          \"x\": null,\n          \"y\": null,\n          \"at\": \"2026-10-12T19:27:37.565Z\"\n        }\n      ]\n    },\n    {\n      \"id\": \"hero-c\",\n      \"label\": \"Hero C — local file via stdio\",\n      \"status\": \"rejected\",\n      \"groupId\": \"hero\",\n      \"section\": \"Hero\",\n      \"imageUrl\": \"https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/mcp-sample.png\",\n      \"comments\": []\n    }\n  ],\n  \"gates\": [],\n  \"cursor\": 1791833257886,\n  \"hint\": \"Pass `cursor` as `since` next time to get only new feedback.\"\n}"
+  },
+  {
+    "tool": "get_feedback",
+    "args": {
+      "projectId": "mcp-prove-mv5n93ox",
+      "since": 1791833257886
+    },
+    "isError": false,
+    "result": "{\n  \"project\": {\n    \"id\": \"mcp-prove-mv5n93ox\",\n    \"name\": \"MCP prove — landing\",\n    \"status\": \"active\"\n  },\n  \"messages\": [],\n  \"sketches\": [\n    {\n      \"id\": \"hero-a\",\n      \"label\": \"Hero A — bold gradient (v2)\",\n      \"status\": \"rejected\",\n      \"groupId\": \"hero\",\n      \"section\": \"Hero\",\n      \"imageUrl\": \"https://placehold.co/640x360/7c3aed/ffffff/png?text=Hero+A+(MCP)\",\n      \"comments\": []\n    },\n    {\n      \"id\": \"hero-b\",\n      \"label\": \"Hero B — uploaded via base64\",\n      \"status\": \"chosen\",\n      \"groupId\": \"hero\",\n      \"section\": \"Hero\",\n      \"imageUrl\": \"https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/hero-b.png\",\n      \"comments\": []\n    },\n    {\n      \"id\": \"hero-c\",\n      \"label\": \"Hero C — local file via stdio\",\n      \"status\": \"rejected\",\n      \"groupId\": \"hero\",\n      \"section\": \"Hero\",\n      \"imageUrl\": \"https://pub-e166bf4d036c4ac2b730b8ad9f9deb02.r2.dev/mcp-prove-mv5n93ox/r1/mcp-sample.png\",\n      \"comments\": []\n    }\n  ],\n  \"gates\": [],\n  \"cursor\": 1791833257886,\n  \"hint\": \"Pass `cursor` as `since` next time to get only new feedback.\"\n}"
+  }
+]
