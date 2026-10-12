@@ -6,7 +6,10 @@ import {
   splitSql,
   hasCompositePk,
   LEFTOVER_CLEANUP,
+  toQueryBody,
+  assertD1Ok,
 } from "../../../../scripts/d1-migrate-lib.mjs";
+import { handleD1Query } from "../../../../scripts/d1-mock-server.mjs";
 
 // node:sqlite (Node >= 22.5); typed locally because the installed @types/node predates it.
 type Stmt = { run: (...a: unknown[]) => unknown; get: (...a: unknown[]) => unknown; all: (...a: unknown[]) => unknown[] };
@@ -18,17 +21,12 @@ const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as {
 const root = path.resolve(__dirname, "../../../..");
 const read = (rel: string) => readFileSync(path.join(root, rel), "utf8");
 
-/** Apply statements as ONE transaction with FKs ON, mirroring a D1 batch. */
+/** Send statements through the strict D1 /query mock as ONE object body. */
 function applyBatch(db: DatabaseSync, stmts: string[]) {
-  db.exec("BEGIN");
-  try {
-    for (const s of stmts) db.prepare(s + ";").run();
-    expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
-    db.exec("COMMIT");
-  } catch (e) {
-    db.exec("ROLLBACK");
-    throw e;
-  }
+  const { status, body } = handleD1Query(db, toQueryBody(stmts));
+  const result = assertD1Ok({ ok: status === 200, status }, body, stmts.length);
+  expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+  return result as { results: Record<string, unknown>[] }[];
 }
 
 function seedPre0004(): DatabaseSync {
@@ -50,10 +48,10 @@ function seedPre0004(): DatabaseSync {
 
 function migrate(db: DatabaseSync) {
   applyBatch(db, LEFTOVER_CLEANUP);
-  const row = db
-    .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='daisy_sketches'")
-    .get() as { sql: string } | undefined;
-  if (hasCompositePk(row?.sql)) return "skipped";
+  const [check] = applyBatch(db, [
+    "SELECT sql FROM sqlite_master WHERE type='table' AND name='daisy_sketches' LIMIT 1",
+  ]);
+  if (hasCompositePk(check.results[0]?.sql)) return "skipped";
   applyBatch(db, splitSql(read("migrations/0004_daisy_sketch_scope.sql")));
   return "applied";
 }
@@ -96,5 +94,35 @@ describe("migration 0004 (FKs ON, single batch)", () => {
         FOREIGN KEY (project_id, sketch_id) REFERENCES daisy_sketches(project_id, id));`);
     expect(migrate(db)).toBe("applied");
     assertMigrated(db);
+  });
+});
+
+describe("strict D1 /query mock", () => {
+  it("rejects array bodies like D1 does", () => {
+    const db = seedPre0004();
+    const r = handleD1Query(db, [{ sql: "SELECT 1;", params: [] }]);
+    expect(r.status).toBe(400);
+    expect(r.body.errors[0].message).toBe("Invalid input: Expected object, received array");
+  });
+
+  it("returns one result per statement for a multi-statement sql string", () => {
+    const db = seedPre0004();
+    const r = handleD1Query(db, toQueryBody(["SELECT 1 AS a", "SELECT 2 AS b"]));
+    expect(r.status).toBe(200);
+    expect(r.body.result.map((x: { results: unknown[] }) => x.results)).toEqual([[{ a: 1 }], [{ b: 2 }]]);
+  });
+
+  it("rolls back the whole multi-statement request on failure", () => {
+    const db = seedPre0004();
+    const r = handleD1Query(db, toQueryBody(["CREATE TABLE t_tmp (x)", "SELECT * FROM nope"]));
+    expect(r.status).toBe(400);
+    expect(() => assertD1Ok({ ok: false, status: 400 }, r.body, 2)).toThrow(/no such table/);
+    expect(db.prepare("SELECT count(*) n FROM sqlite_master WHERE name='t_tmp'").get()).toEqual({ n: 0 });
+  });
+
+  it("accepts the { batch } object form with params", () => {
+    const db = seedPre0004();
+    const r = handleD1Query(db, { batch: [{ sql: "SELECT ? AS v", params: ["x"] }] });
+    expect(r.body.result[0].results).toEqual([{ v: "x" }]);
   });
 });

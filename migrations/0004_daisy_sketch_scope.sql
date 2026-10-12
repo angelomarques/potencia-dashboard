@@ -1,7 +1,8 @@
 -- Migration 0004: Scope daisy_sketches by (project_id, id) composite primary key
 -- Enables distinct projects to have sketches with the same sketchId without collision.
 --
--- Applied by scripts/apply-daisy-migration.mjs as ONE D1 batch (single HTTP
+-- Applied by scripts/apply-daisy-migration.mjs as ONE D1 /query request
+-- ({ sql: "s1;\ns2;..." }, run by D1 as one batch/transaction; single HTTP
 -- request, executed atomically by D1). Foreign keys stay ON throughout: the
 -- statements are ordered so every FK is valid at every step, so no PRAGMA is
 -- needed (D1 ignores/does not carry PRAGMA foreign_keys between requests).
