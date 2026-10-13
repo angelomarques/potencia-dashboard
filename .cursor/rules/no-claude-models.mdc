@@ -1,0 +1,15 @@
+---
+description: Do not use Anthropic Claude models unless the user explicitly requests them
+alwaysApply: true
+---
+
+# No Claude models unless requested
+
+Never select or spawn Anthropic Claude for this project — including any `claude-*` slug, Sonnet, Opus, Haiku, or any model name that includes "Claude" — for this chat, workers, subagents, or `CreateAgent` `model`, unless the user **explicitly** names Claude or a `claude-*` model in that same request.
+
+When choosing a model:
+
+- Prefer the parent or inherited model for the current agent.
+- Otherwise default to Grok or `composer-2.5` (or another non-Claude model available in context).
+
+Do not infer consent from prior turns, project defaults, or task difficulty. If the user did not name Claude in the request, do not use Claude.
