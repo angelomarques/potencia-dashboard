@@ -22,6 +22,7 @@ import {
   Film,
   Play,
   X,
+  Trash2,
 } from "lucide-react";
 
 type Channel = {
@@ -62,6 +63,7 @@ export default function YoutubeChannelDetailPage() {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -138,6 +140,31 @@ export default function YoutubeChannelDetailPage() {
   const closePreview = () => {
     setPreviewId(null);
     setPreviewUrl(null);
+  };
+
+  const deleteVideo = async (videoId: string) => {
+    const confirmed = window.confirm(
+      "Delete this video from the database and remove its file from the R2 bucket? This cannot be undone.",
+    );
+    if (!confirmed) return;
+    setDeletingId(videoId);
+    try {
+      const res = await fetch(`/api/youtube/videos/${videoId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      toast.success("Deleted from database and R2");
+      if (previewId === videoId) {
+        closePreview();
+      }
+      setVideos((prev) => prev.filter((v) => v.id !== videoId));
+      await load();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const openPreview = async (videoId: string) => {
@@ -307,12 +334,24 @@ export default function YoutubeChannelDetailPage() {
                         disabled={
                           publishingId === v.id ||
                           !v.r2_key ||
-                          v.status === "published"
+                          v.status === "published" ||
+                          deletingId === v.id
                         }
                         onClick={() => void publish(v.id, false)}
                       >
                         <Send className="mr-1 h-3.5 w-3.5" />
                         {publishingId === v.id ? "…" : "Publish"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={deletingId === v.id}
+                        onClick={() => void deleteVideo(v.id)}
+                        data-feature="yt-delete-video"
+                        data-video-id={v.id}
+                      >
+                        <Trash2 className="mr-1 h-3.5 w-3.5" />
+                        {deletingId === v.id ? "Deleting…" : "Delete"}
                       </Button>
                     </div>
                   </div>
