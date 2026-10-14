@@ -94,7 +94,7 @@ export default function SignUpPage() {
 
       succeeded = true;
       toast.success("Account created successfully! Welcome to Lawa.");
-      router.push("/board");
+      router.push("/projects");
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "An unexpected error occurred.";

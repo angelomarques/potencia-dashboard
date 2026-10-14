@@ -14,7 +14,9 @@
     "test:daisy": "vitest run src/lib/daisy",
     "test:daisy-mcp": "vitest run src/lib/daisy/__tests__/mcp.test.ts",
     "test:auth": "vitest run src/lib/auth",
+    "test:projects": "vitest run src/lib/projects",
     "test:e2e:auth-origin": "node tests/e2e/auth-origin.mjs",
+    "test:e2e:projects": "node tests/e2e/projects-routing.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
