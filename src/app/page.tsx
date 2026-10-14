@@ -5,8 +5,8 @@ import { getSession } from "@/lib/auth/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Logo } from "@/components/brand/logo";
 import {
-  Layers,
   ArrowRight,
   ShieldCheck,
   Zap,
@@ -29,9 +29,7 @@ export default async function HomePage() {
       <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto max-w-6xl flex h-16 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm shadow-primary/25">
-              <Layers className="h-5 w-5" />
-            </div>
+            <Logo variant="badge" size={36} className="rounded-lg shadow-sm" />
             <div className="flex items-center gap-2">
               <span className="font-bold text-lg tracking-tight">Potencia</span>
               <Badge variant="secondary" className="font-medium text-xs bg-primary/10 text-primary border-primary/20">
@@ -277,7 +275,7 @@ export default async function HomePage() {
       <footer className="border-t border-border/50 py-8 text-center text-xs text-muted-foreground">
         <div className="container mx-auto max-w-6xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Layers className="h-4 w-4 text-primary" />
+            <Logo variant="mark" size={18} />
             <span className="font-medium text-foreground">Potencia Dashboard</span>
             <span>&middot; Lawa Workspace</span>
           </div>
