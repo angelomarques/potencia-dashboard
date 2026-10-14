@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/lib/auth/client";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { HelpCircle, Layers, LogOut, Palette, Sparkles, Video } from "lucide-react";
+import { HelpCircle, Layers, LogOut, Palette, Video } from "lucide-react";
 import { toast } from "sonner";
 
 interface DashboardHeaderProps {
@@ -55,7 +54,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
       {/* Brand & App Info */}
       <div className="flex items-center gap-4">
         <Link
-          href="/board"
+          href="/projects"
           className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm shadow-primary/20">
@@ -73,15 +72,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
 
         <div className="h-5 w-[1px] bg-border/80" />
 
-        {/* Workspace Indicator */}
         <div className="flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border-primary/40 bg-primary/10 text-primary"
-          >
-            <Sparkles className="h-3 w-3" />
-            Lawa (Lawyer's platform) Workspace
-          </Badge>
           <Button variant="ghost" size="sm" asChild className="h-8 gap-1.5 text-xs">
             <Link href="/youtube">
               <Video className="h-3.5 w-3.5 text-red-500" />

@@ -50,7 +50,7 @@ export default function SignInPage() {
       }
 
       toast.success("Welcome back! Redirecting...");
-      router.push("/board");
+      router.push("/projects");
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "An unexpected error occurred.";
