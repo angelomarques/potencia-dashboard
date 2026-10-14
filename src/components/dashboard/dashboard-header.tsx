@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { HelpCircle, Layers, LogOut, Palette, Video } from "lucide-react";
+import { HelpCircle, LogOut, Palette, Video } from "lucide-react";
+import { Logo } from "@/components/brand/logo";
 import { toast } from "sonner";
 
 interface DashboardHeaderProps {
@@ -57,9 +58,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           href="/projects"
           className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm shadow-primary/20">
-            <Layers className="h-5 w-5" />
-          </div>
+          <Logo variant="badge" size={36} className="rounded-lg shadow-sm" />
           <div className="flex flex-col">
             <span className="font-bold text-base tracking-tight leading-tight">
               Potencia

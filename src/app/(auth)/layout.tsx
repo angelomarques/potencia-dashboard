@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Layers } from "lucide-react";
+import { Logo } from "@/components/brand/logo";
 import { Badge } from "@/components/ui/badge";
 
 export default function AuthLayout({
@@ -21,9 +21,11 @@ export default function AuthLayout({
           href="/"
           className="group flex items-center gap-2.5 transition-transform hover:scale-105 mb-2"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 group-hover:bg-primary/90 transition-colors">
-            <Layers className="h-5 w-5" />
-          </div>
+          <Logo
+            variant="badge"
+            size="lg"
+            className="rounded-xl shadow-md shadow-black/5 group-hover:shadow-primary/20 transition-all"
+          />
           <div className="flex flex-col text-left">
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-lg tracking-tight">Potencia</span>
