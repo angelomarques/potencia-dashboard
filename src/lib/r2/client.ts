@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
   HeadObjectCommand,
   GetObjectCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { readR2Config, type R2Config } from "./config";
 
@@ -74,6 +75,26 @@ export async function headR2Object(
     }
     throw err;
   }
+}
+
+export async function deleteR2Object(
+  key: string,
+  bucket?: string,
+): Promise<{ bucket: string; key: string; existed: boolean }> {
+  const { cfg, client } = getR2();
+  const resolvedBucket = bucket ?? cfg.bucket;
+  const before = await headR2Object(key, resolvedBucket);
+  await client.send(
+    new DeleteObjectCommand({
+      Bucket: resolvedBucket,
+      Key: key,
+    }),
+  );
+  const after = await headR2Object(key, resolvedBucket);
+  if (after.exists) {
+    throw new Error(`R2 object still exists after delete: ${key}`);
+  }
+  return { bucket: resolvedBucket, key, existed: before.exists };
 }
 
 export async function getR2ObjectBuffer(

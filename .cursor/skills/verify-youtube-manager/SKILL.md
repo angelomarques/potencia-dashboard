@@ -18,6 +18,7 @@ Requires authenticated session (better-auth). For agent proves prefer the headle
 | `yt-upload-pending` | Upload creates pending row with r2_key |
 | `yt-dry-run-publish` | Dry-run publish returns mode=dry_run |
 | `yt-preview-video` | Preview button → signed R2 URL → inline `<video controls>` |
+| `yt-delete-video` | Delete button removes the D1 row and the R2 object |
 
 ## Scripts
 
