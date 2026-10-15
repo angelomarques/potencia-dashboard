@@ -21,9 +21,11 @@ export const metadata: Metadata = {
   description: "Production kanban dashboard for Lawa and high-velocity product teams",
   icons: {
     icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.png", type: "image/png", sizes: "64x64" },
     ],
+    shortcut: "/favicon.ico",
     apple: [
       { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
     ],
