@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
 import { d1Query } from "@/lib/db/d1-http";
+import { deleteYoutubeVideo } from "@/lib/youtube/delete-video";
 
 export const dynamic = "force-dynamic";
 
@@ -29,11 +30,30 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { id } = await ctx.params;
-    await d1Query("DELETE FROM youtube_upload_jobs WHERE video_id = ?", [id]);
-    await d1Query("DELETE FROM youtube_videos WHERE id = ?", [id]);
-    return NextResponse.json({ ok: true });
+    const result = await deleteYoutubeVideo(id);
+    switch (result.status) {
+      case "not_found":
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      case "deleted":
+        return NextResponse.json({
+          ok: true,
+          videoId: result.videoId,
+          r2: result.r2,
+          r2Key: result.r2Key,
+        });
+      default: {
+        const _exhaustive: never = result;
+        return NextResponse.json(
+          { error: `Unhandled delete result: ${JSON.stringify(_exhaustive)}` },
+          { status: 500 },
+        );
+      }
+    }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal error";
+    if (message.includes("R2 is not configured")) {
+      return NextResponse.json({ error: message }, { status: 503 });
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

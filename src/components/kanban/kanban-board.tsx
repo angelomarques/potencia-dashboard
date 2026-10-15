@@ -40,12 +40,14 @@ interface KanbanBoardProps {
   board: KanbanBoardData;
   initialColumns: KanbanColumnData[];
   initialCards: KanbanCardData[];
+  boardApiPath?: string;
 }
 
 export function KanbanBoard({
   board,
   initialColumns,
   initialCards,
+  boardApiPath = "/api/boards/lawa",
 }: KanbanBoardProps) {
   const [columns] = useState<KanbanColumnData[]>(initialColumns);
   const [cards, setCards] = useState<KanbanCardData[]>(initialCards);
@@ -79,7 +81,7 @@ export function KanbanBoard({
   const refreshBoard = async () => {
     setIsRefreshing(true);
     try {
-      const res = await fetch("/api/boards/lawa", { cache: "no-store" });
+      const res = await fetch(boardApiPath, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to refresh");
       const data = await res.json();
       if (data.cards) {
@@ -347,7 +349,7 @@ export function KanbanBoard({
   };
 
   return (
-    <div className="flex flex-col flex-1 h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Board Controls Toolbar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-6 py-3 border-b border-border/60 bg-background/60 backdrop-blur-sm z-10">
         <div className="flex items-center gap-3 flex-1 max-w-xl">
