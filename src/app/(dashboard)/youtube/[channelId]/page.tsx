@@ -344,7 +344,6 @@ export default function YoutubeChannelDetailPage() {
                       </Button>
                       <Button
                         size="sm"
-                        variant="destructive"
                         disabled={deletingId === v.id}
                         onClick={() => void deleteVideo(v.id)}
                         data-feature="yt-delete-video"
