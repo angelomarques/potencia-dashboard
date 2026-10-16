@@ -1,6 +1,11 @@
 import "server-only";
+import {
+  HELP_CENTER_EVENT_SUFFIX,
+  buildHelpCenterQueryPlan,
+  hogQlQueryPayload,
+} from "@/lib/posthog/help-center-query";
 
-export const HELP_CENTER_EVENT_SUFFIX = "_help_center_submitted";
+export { HELP_CENTER_EVENT_SUFFIX };
 
 export interface HelpCenterMessage {
   event: string;
@@ -226,6 +231,49 @@ function sanitizeError(msg: string, secret?: string): string {
   return msg.split(secret).join("[REDACTED]");
 }
 
+async function fetchHelpCenterEventDefinitionNames(
+  apiHost: string,
+  projectId: string,
+  personalApiKey: string
+): Promise<string[]> {
+  const names: string[] = [];
+  const seen = new Set<string>();
+  let url: string | null =
+    `${apiHost}/api/projects/${encodeURIComponent(projectId)}/event_definitions/?search=${encodeURIComponent("help_center_submitted")}&limit=100`;
+
+  for (let page = 0; url && page < 5; page += 1) {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${personalApiKey}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      break;
+    }
+
+    const data: unknown = await response.json();
+    if (!data || typeof data !== "object") {
+      break;
+    }
+
+    const record = data as { results?: unknown; next?: unknown };
+    const results = Array.isArray(record.results) ? record.results : [];
+    for (const row of results) {
+      if (!row || typeof row !== "object") continue;
+      const name = (row as { name?: unknown }).name;
+      if (typeof name !== "string" || seen.has(name)) continue;
+      seen.add(name);
+      names.push(name);
+    }
+
+    url = typeof record.next === "string" && record.next.length > 0 ? record.next : null;
+  }
+
+  return names;
+}
+
 /**
  * Fetches help-center messages from PostHog query endpoint (server-only).
  * Returns missing credentials state if personal key or project id is missing.
@@ -250,14 +298,19 @@ export async function fetchHelpCenterMessages(): Promise<HelpCenterInboxResult> 
   const apiHost = resolvePostHogApiHost();
   const url = `${apiHost}/api/projects/${encodeURIComponent(projectId!)}/query/`;
 
-  const queryPayload = {
-    query: {
-      kind: "HogQLQuery",
-      query:
-        "SELECT event, distinct_id, timestamp, properties.email AS email, properties.message AS message, properties.accountEmail AS accountEmail FROM events WHERE endsWith(event, '_help_center_submitted') ORDER BY timestamp DESC LIMIT 200",
-    },
-    name: "help center inbox",
-  };
+  let discoveredNames: string[] = [];
+  try {
+    discoveredNames = await fetchHelpCenterEventDefinitionNames(
+      apiHost,
+      projectId!,
+      personalApiKey!
+    );
+  } catch {
+    discoveredNames = [];
+  }
+
+  const plan = buildHelpCenterQueryPlan(discoveredNames);
+  const queryPayload = hogQlQueryPayload(plan);
 
   try {
     const response = await fetch(url, {

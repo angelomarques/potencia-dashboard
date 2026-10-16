@@ -276,7 +276,7 @@ importers:
         specifier: ^5.20260923.1
         version: 5.20260923.1
       '@playwright/test':
-        specifier: 1.64.0
+        specifier: ^1.64.0
         version: 1.64.0
       '@tailwindcss/postcss':
         specifier: ^4

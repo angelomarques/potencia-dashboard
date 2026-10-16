@@ -1,8 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = process.env.VERIFY_PORT || "43210";
-const baseURL = process.env.BASE_URL || process.env.VERIFY_URL || `http://localhost:${port}`;
-const reuseServer = Boolean(process.env.BASE_URL || process.env.VERIFY_URL);
+const baseURL = process.env.BASE_URL || process.env.VERIFY_URL || process.env.PLAYWRIGHT_BASE_URL || `http://localhost:${port}`;
+const reuseServer = Boolean(process.env.BASE_URL || process.env.VERIFY_URL || process.env.PLAYWRIGHT_BASE_URL);
 
 export default defineConfig({
   testDir: "./tests/e2e",
