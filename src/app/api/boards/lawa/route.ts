@@ -13,7 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const project = getDashboardProjectBySlug("lawa");
+    const project = await getDashboardProjectBySlug("lawa");
     if (!project) {
       return NextResponse.json({ error: "Project 'lawa' not found" }, { status: 404 });
     }

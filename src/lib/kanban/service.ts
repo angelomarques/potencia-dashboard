@@ -3,6 +3,7 @@ import {
   getDashboardProjectBySlug,
   listDashboardProjects,
   type DashboardProject,
+  type ProjectDbDeps,
 } from "@/lib/projects/registry";
 import {
   defaultColumnsForBoard,
@@ -32,14 +33,27 @@ export type KanbanDbDeps = {
   batch: typeof d1Batch;
   now: () => number;
   newId: () => string;
-  listProjects: () => DashboardProject[];
-  getProjectBySlug: (slug: string) => DashboardProject | undefined;
+  listProjects: (
+    projectDeps?: Partial<ProjectDbDeps>,
+  ) => Promise<DashboardProject[]> | DashboardProject[];
+  getProjectBySlug: (
+    slug: string,
+    projectDeps?: Partial<ProjectDbDeps>,
+  ) => Promise<DashboardProject | undefined> | DashboardProject | undefined;
   loadBoardForProject: (project: DashboardProject) => Promise<{
     board: KanbanBoardData;
     columns: KanbanColumnData[];
     cards: KanbanCardData[];
   }>;
 };
+
+function projectDepsFromKanban(deps: KanbanDbDeps): Partial<ProjectDbDeps> {
+  return {
+    query: deps.query,
+    batch: deps.batch,
+    now: deps.now,
+  };
+}
 
 export const defaultKanbanDbDeps: KanbanDbDeps = {
   query: d1Query,
@@ -107,7 +121,7 @@ export async function listProjectsWithColumns(
   overrides: Partial<KanbanDbDeps> = {},
 ): Promise<ProjectWithColumns[]> {
   const deps: KanbanDbDeps = { ...defaultKanbanDbDeps, ...overrides };
-  const projects = deps.listProjects();
+  const projects = await deps.listProjects(projectDepsFromKanban(deps));
   return Promise.all(
     projects.map(async (project) => ({
       ...project,
@@ -135,7 +149,7 @@ export async function listTasks(
 }> {
   const deps: KanbanDbDeps = { ...defaultKanbanDbDeps, ...overrides };
   const slug = input.projectSlug?.trim() || "lawa";
-  const project = deps.getProjectBySlug(slug);
+  const project = await deps.getProjectBySlug(slug, projectDepsFromKanban(deps));
   if (!project) {
     throw new KanbanServiceError(404, `Project '${slug}' not found`);
   }
@@ -225,7 +239,10 @@ export async function getTask(
   return {
     ...card,
     status_name: col?.name ?? card.column_id,
-    project_slug: projectSlugForBoard(card.board_id, deps.listProjects()),
+    project_slug: projectSlugForBoard(
+      card.board_id,
+      await deps.listProjects(projectDepsFromKanban(deps)),
+    ),
   };
 }
 
@@ -256,7 +273,10 @@ export async function createTask(
   let projectSlug: string | null = null;
 
   if (input.projectSlug) {
-    const project = deps.getProjectBySlug(input.projectSlug.trim());
+    const project = await deps.getProjectBySlug(
+      input.projectSlug.trim(),
+      projectDepsFromKanban(deps),
+    );
     if (!project) {
       throw new KanbanServiceError(404, `Project '${input.projectSlug}' not found`);
     }
@@ -316,7 +336,10 @@ export async function createTask(
   }
 
   if (!projectSlug) {
-    projectSlug = projectSlugForBoard(boardId, deps.listProjects());
+    projectSlug = projectSlugForBoard(
+      boardId,
+      await deps.listProjects(projectDepsFromKanban(deps)),
+    );
   }
 
   const rawPriority = input.priority ?? "medium";
@@ -547,7 +570,10 @@ export async function moveTask(
   return {
     ...updated,
     status_name: destColumn.name,
-    project_slug: projectSlugForBoard(card.board_id, deps.listProjects()),
+    project_slug: projectSlugForBoard(
+      card.board_id,
+      await deps.listProjects(projectDepsFromKanban(deps)),
+    ),
   };
 }
 

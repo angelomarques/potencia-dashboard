@@ -32,9 +32,11 @@ export function ProjectBoardToolbar({ project }: ProjectBoardToolbarProps) {
           <h1 className="text-sm font-semibold leading-tight text-foreground">
             {project.name}
           </h1>
-          <p className="text-[11px] text-muted-foreground leading-tight">
-            {project.tagline}
-          </p>
+          {project.tagline ? (
+            <p className="text-[11px] text-muted-foreground leading-tight">
+              {project.tagline}
+            </p>
+          ) : null}
         </div>
       </div>
 

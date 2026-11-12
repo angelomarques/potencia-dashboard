@@ -17,7 +17,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     const { projectSlug } = await context.params;
-    const project = getDashboardProjectBySlug(projectSlug);
+    const project = await getDashboardProjectBySlug(projectSlug);
 
     if (!project) {
       return NextResponse.json(
