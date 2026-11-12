@@ -120,6 +120,28 @@ export type Board = typeof boards.$inferSelect;
 export type Column = typeof columns.$inferSelect;
 export type Card = typeof cards.$inferSelect;
 
+export const kanbanMcpTokens = sqliteTable(
+  "kanban_mcp_tokens",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenPrefix: text("token_prefix").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    lastUsedAt: integer("last_used_at", { mode: "number" }),
+    revokedAt: integer("revoked_at", { mode: "number" }),
+    createdAt: integer("created_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("idx_kanban_mcp_tokens_user").on(t.userId),
+    index("idx_kanban_mcp_tokens_hash").on(t.tokenHash),
+  ],
+);
+
+export type KanbanMcpToken = typeof kanbanMcpTokens.$inferSelect;
+
 
 export const youtubeChannels = sqliteTable("youtube_channels", {
   id: text("id").primaryKey(),
