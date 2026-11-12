@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
 import type { DashboardProject } from "@/lib/projects/registry";
 
 interface ProjectListProps {
@@ -24,8 +25,11 @@ export function ProjectList({ projects }: ProjectListProps) {
       >
         <p className="text-sm font-medium text-foreground">No projects yet</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          When a workspace is provisioned, it will appear here.
+          Create your first workspace to start organizing tasks on a kanban board.
         </p>
+        <div className="mt-4 flex justify-center">
+          <CreateProjectDialog />
+        </div>
       </div>
     );
   }
@@ -51,9 +55,11 @@ export function ProjectList({ projects }: ProjectListProps) {
                   <CardTitle className="text-base font-semibold leading-tight">
                     {project.name}
                   </CardTitle>
-                  <CardDescription className="mt-0.5 text-xs">
-                    {project.tagline}
-                  </CardDescription>
+                  {project.tagline ? (
+                    <CardDescription className="mt-0.5 text-xs">
+                      {project.tagline}
+                    </CardDescription>
+                  ) : null}
                 </div>
               </div>
             </CardHeader>

@@ -13,7 +13,7 @@ interface ProjectKanbanPageProps {
 
 export default async function ProjectKanbanPage({ params }: ProjectKanbanPageProps) {
   const { projectSlug } = await params;
-  const project = getDashboardProjectBySlug(projectSlug);
+  const project = await getDashboardProjectBySlug(projectSlug);
 
   if (!project) {
     notFound();
