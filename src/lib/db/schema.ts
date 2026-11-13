@@ -191,3 +191,60 @@ export const youtubeUploadJobs = sqliteTable(
 export type YoutubeChannel = typeof youtubeChannels.$inferSelect;
 export type YoutubeVideo = typeof youtubeVideos.$inferSelect;
 export type YoutubeUploadJob = typeof youtubeUploadJobs.$inferSelect;
+
+export const leads = sqliteTable(
+  "leads",
+  {
+    id: text("id").primaryKey(),
+    projectSlug: text("project_slug").notNull(),
+    name: text("name").notNull(),
+    role: text("role"),
+    email: text("email"),
+    phone: text("phone"),
+    company: text("company"),
+    website: text("website"),
+    linkedinUrl: text("linkedin_url"),
+    source: text("source"),
+    status: text("status").notNull().default("new"),
+    notes: text("notes"),
+    lastContactedAt: integer("last_contacted_at", { mode: "number" }),
+    nextFollowUpAt: integer("next_follow_up_at", { mode: "number" }),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    createdAt: integer("created_at", { mode: "number" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("idx_leads_project_slug").on(t.projectSlug),
+    index("idx_leads_status").on(t.status),
+    index("idx_leads_last_contacted").on(t.lastContactedAt),
+    index("idx_leads_next_follow_up").on(t.nextFollowUpAt),
+    index("idx_leads_created_at").on(t.createdAt),
+  ],
+);
+
+export const leadOutreachLogs = sqliteTable(
+  "lead_outreach_logs",
+  {
+    id: text("id").primaryKey(),
+    leadId: text("lead_id")
+      .notNull()
+      .references(() => leads.id, { onDelete: "cascade" }),
+    channel: text("channel").notNull().default("email"),
+    direction: text("direction").notNull().default("outbound"),
+    outcome: text("outcome").notNull().default("sent"),
+    subject: text("subject"),
+    message: text("message"),
+    approachedAt: integer("approached_at", { mode: "number" }).notNull(),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    createdAt: integer("created_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("idx_lead_logs_lead_id").on(t.leadId, t.approachedAt),
+    index("idx_lead_logs_approached_at").on(t.approachedAt),
+    index("idx_lead_logs_channel").on(t.channel),
+  ],
+);
+
+export type LeadRow = typeof leads.$inferSelect;
+export type LeadOutreachLogRow = typeof leadOutreachLogs.$inferSelect;
+

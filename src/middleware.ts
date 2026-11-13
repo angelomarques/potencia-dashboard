@@ -24,5 +24,6 @@ export const config = {
     "/dashboard/:path*",
     "/youtube/:path*",
     "/daisy/:path*",
+    "/leads/:path*",
   ],
 };
