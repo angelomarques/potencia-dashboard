@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ChevronLeft, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { KanbanMcpDialog } from "@/components/projects/kanban-mcp-dialog";
 import type { DashboardProject } from "@/lib/projects/registry";
 
 interface ProjectBoardToolbarProps {
@@ -31,23 +32,28 @@ export function ProjectBoardToolbar({ project }: ProjectBoardToolbarProps) {
           <h1 className="text-sm font-semibold leading-tight text-foreground">
             {project.name}
           </h1>
-          <p className="text-[11px] text-muted-foreground leading-tight">
-            {project.tagline}
-          </p>
+          {project.tagline ? (
+            <p className="text-[11px] text-muted-foreground leading-tight">
+              {project.tagline}
+            </p>
+          ) : null}
         </div>
       </div>
 
-      <Button
-        variant="outline"
-        size="sm"
-        asChild
-        className="h-8 gap-1.5 text-xs shrink-0"
-      >
-        <Link href={`/leads?project=${project.slug}`}>
-          <Send className="h-3.5 w-3.5 text-emerald-500" />
-          <span>Project Leads</span>
-        </Link>
-      </Button>
+      <div className="flex items-center gap-2 shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          asChild
+          className="h-8 gap-1.5 text-xs shrink-0"
+        >
+          <Link href={`/leads?project=${project.slug}`}>
+            <Send className="h-3.5 w-3.5 text-emerald-500" />
+            <span>Project Leads</span>
+          </Link>
+        </Button>
+        <KanbanMcpDialog />
+      </div>
     </div>
   );
 }

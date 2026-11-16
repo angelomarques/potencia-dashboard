@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -78,16 +78,36 @@ export function KanbanBoard({
   );
 
   // Refresh board data from API
+  const fetchAndSyncBoard = useCallback(async (): Promise<boolean> => {
+    const res = await fetch(boardApiPath, { cache: "no-store" });
+    if (!res.ok) return false;
+    const data = await res.json();
+    if (!data.cards) return false;
+    setCards(data.cards);
+    return true;
+  }, [boardApiPath]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        !activeCard &&
+        !dialogOpen
+      ) {
+        void fetchAndSyncBoard().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [activeCard, dialogOpen, fetchAndSyncBoard]);
+
   const refreshBoard = async () => {
     setIsRefreshing(true);
     try {
-      const res = await fetch(boardApiPath, { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to refresh");
-      const data = await res.json();
-      if (data.cards) {
-        setCards(data.cards);
-        toast.success("Board synced with Cloudflare D1");
-      }
+      const synced = await fetchAndSyncBoard();
+      if (!synced) throw new Error("Failed to refresh");
+      toast.success("Board synced with Cloudflare D1");
     } catch {
       toast.error("Could not sync board data");
     } finally {

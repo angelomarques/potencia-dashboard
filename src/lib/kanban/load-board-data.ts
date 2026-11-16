@@ -6,7 +6,7 @@ import type {
 } from "@/types/kanban";
 import type { DashboardProject } from "@/lib/projects/registry";
 
-function defaultColumnsForBoard(boardId: string): KanbanColumnData[] {
+export function defaultColumnsForBoard(boardId: string): KanbanColumnData[] {
   const prefix = boardId.replace(/^board_/, "");
   return [
     {

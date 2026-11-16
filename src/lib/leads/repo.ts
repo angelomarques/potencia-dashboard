@@ -212,7 +212,12 @@ export function mapLogRow(row: LogDbRow): LeadOutreachLog {
 export async function listAvailableLeadProjects(): Promise<
   LeadProjectOption[]
 > {
-  const registryProjects = listDashboardProjects();
+  let registryProjects: Awaited<ReturnType<typeof listDashboardProjects>> = [];
+  try {
+    registryProjects = await listDashboardProjects();
+  } catch (err) {
+    console.error("[leads] failed to list dashboard projects", err);
+  }
   const bySlug = new Map<string, LeadProjectOption>();
 
   for (const p of registryProjects) {

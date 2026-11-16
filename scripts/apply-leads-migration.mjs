@@ -16,7 +16,7 @@ function requireEnv(name, ...alts) {
 }
 
 async function main() {
-  const rel = "migrations/0005_leads_outbound.sql";
+  const rel = "migrations/0006_leads_outbound.sql";
   const conn = {
     accountId: requireEnv("CLOUDFLARE_ACCOUNT_ID"),
     dbId: requireEnv("D1_DATABASE_ID", "CLOUDFLARE_D1_DATABASE_ID"),

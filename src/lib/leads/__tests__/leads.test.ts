@@ -237,10 +237,10 @@ describe("Lead Outbound Tracker - Report Aggregation", () => {
   });
 });
 
-describe("Migration 0005_leads_outbound.sql", () => {
+describe("Migration 0006_leads_outbound.sql", () => {
   it("contains valid SQL statements for leads and lead_outreach_logs", async () => {
     const raw = await readFile(
-      resolve(process.cwd(), "migrations/0005_leads_outbound.sql"),
+      resolve(process.cwd(), "migrations/0006_leads_outbound.sql"),
       "utf8",
     );
     const statements = splitSql(raw);

@@ -229,7 +229,7 @@ export function CardDialog({
           <DialogDescription>
             {isEditing
               ? "Update details and status for this task."
-              : "Add a new task card to the Lawa kanban board."}
+              : "Add a new task card to the kanban board."}
           </DialogDescription>
         </DialogHeader>
 
