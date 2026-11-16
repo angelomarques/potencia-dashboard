@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { HelpCircle, LogOut, Palette, Video } from "lucide-react";
+import { HelpCircle, LogOut, Palette, Send, Video } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { toast } from "sonner";
 
@@ -72,6 +72,12 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         <div className="h-5 w-[1px] bg-border/80" />
 
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild className="h-8 gap-1.5 text-xs">
+            <Link href="/leads">
+              <Send className="h-3.5 w-3.5 text-emerald-500" />
+              Leads
+            </Link>
+          </Button>
           <Button variant="ghost" size="sm" asChild className="h-8 gap-1.5 text-xs">
             <Link href="/youtube">
               <Video className="h-3.5 w-3.5 text-red-500" />
