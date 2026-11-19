@@ -13,6 +13,10 @@ import {
   type EnrichedKanbanCard,
   type KanbanDbDeps,
 } from "@/lib/kanban/service";
+import {
+  createDashboardProject,
+  ProjectServiceError,
+} from "@/lib/projects/registry";
 import type { KanbanMcpActor } from "./tokens";
 
 type ToolResult = {
@@ -50,6 +54,9 @@ function formatTask(card: EnrichedKanbanCard) {
 
 function handleError(err: unknown): ToolResult {
   if (err instanceof KanbanServiceError) {
+    return fail(`${err.message} (status ${err.status})`);
+  }
+  if (err instanceof ProjectServiceError) {
     return fail(`${err.message} (status ${err.status})`);
   }
   return fail(err instanceof Error ? err.message : String(err));
@@ -94,6 +101,44 @@ export function createKanbanMcpServer(
             })),
           })),
         });
+      } catch (err) {
+        return handleError(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "create_project",
+    {
+      description:
+        "Create a new dashboard project and its default Kanban board columns.",
+      inputSchema: {
+        name: z.string().min(1).max(300).describe("Project display name."),
+        slug: z
+          .string()
+          .min(1)
+          .max(64)
+          .optional()
+          .describe("Optional unique project slug. Defaults to slugified name."),
+        tagline: z
+          .string()
+          .max(500)
+          .optional()
+          .describe("Optional project tagline / description."),
+      },
+    },
+    async ({ name, slug, tagline }) => {
+      try {
+        const project = await createDashboardProject(
+          {
+            name,
+            slug,
+            tagline,
+            createdBy: actor.userId,
+          },
+          deps,
+        );
+        return ok({ project });
       } catch (err) {
         return handleError(err);
       }

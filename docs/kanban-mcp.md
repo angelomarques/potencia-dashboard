@@ -11,6 +11,7 @@ Users can connect their AI agents (Antigravity, Cursor, Claude Code, …) to the
 | Tool | What it does |
 |---|---|
 | `list_projects` | Lists registered Kanban projects (`slug`, `name`, `boardId`) and their status columns (`id`, `name`, `position`). |
+| `create_project` | Creates a new dashboard project and its default Kanban board columns (`name`, `slug?`, `tagline?`), attributed to the token owner (`createdBy`). |
 | `list_tasks` | Retrieves tasks for a project (`projectSlug`, default `'lawa'`), with optional `status` (column name or ID), `priority`, `search`, and `limit` filters. |
 | `get_task` | Retrieves a single task by `cardId`. |
 | `create_task` | Creates a new task (`projectSlug?`, `title`, `description?`, `status?` defaulting to `'To do'`, `priority?`, `position?` `'top'\|'bottom'`), attributed to the token owner (`created_by`). |

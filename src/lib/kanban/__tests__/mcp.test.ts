@@ -277,12 +277,47 @@ describe("Kanban MCP server (in-memory transport + real SQLite migrations)", () 
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
       "change_task_status",
+      "create_project",
       "create_task",
       "get_task",
       "list_projects",
       "list_tasks",
       "update_task",
     ]);
+  });
+
+  it("creates a new project and board columns, rejecting duplicates and bad slugs", async () => {
+    const created = await call("create_project", {
+      name: "Mobile App",
+      slug: "mobile-app",
+      tagline: "React Native client",
+    });
+    expect(created.isError).toBeFalsy();
+    expect(created.json.project.slug).toBe("mobile-app");
+    expect(created.json.project.name).toBe("Mobile App");
+    expect(created.json.project.tagline).toBe("React Native client");
+    expect(created.json.project.boardId).toBe("board_mobile-app");
+    expect(created.json.project.appId).toBe("app_mobile-app");
+
+    const listRes = await call("list_projects");
+    expect(
+      listRes.json.projects.map((p: { slug: string }) => p.slug),
+    ).toContain("mobile-app");
+
+    const duplicate = await call("create_project", {
+      name: "Mobile App Duplicate",
+      slug: "mobile-app",
+    });
+    expect(duplicate.isError).toBe(true);
+    expect(duplicate.text).toContain("409");
+    expect(duplicate.text).toContain("already exists");
+
+    const badSlug = await call("create_project", {
+      name: "Bad Slug Proj",
+      slug: "-invalid_slug-",
+    });
+    expect(badSlug.isError).toBe(true);
+    expect(badSlug.text).toContain("400");
   });
 
   it("list_projects returns lawa with its 5 columns", async () => {

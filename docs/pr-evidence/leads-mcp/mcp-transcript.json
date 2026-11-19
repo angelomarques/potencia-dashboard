@@ -1,0 +1,1850 @@
+{
+  "capturedAt": "2026-11-19T00:25:49.300Z",
+  "server": "http://localhost:43213/api/leads/mcp",
+  "note": "Local dev server, local node:sqlite D1 HTTP mock with migrations 0001, 0002_add_todo_column, 0005, 0006 applied. Token minted locally via /api/kanban/mcp/tokens; value redacted.",
+  "token": {
+    "id": "kmcp_032b279b-847c-49a8-8ab9-fb03ef4e0c97",
+    "prefix": "<REDACTED>",
+    "name": "Leads MCP evidence"
+  },
+  "exchanges": [
+    {
+      "label": "unauthenticated request is rejected",
+      "endpoint": "/api/leads/mcp",
+      "status": 401,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "tools/list",
+          "params": {}
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "error": {
+          "code": -32001,
+          "message": "missing_authorization"
+        },
+        "id": null
+      }
+    },
+    {
+      "label": "initialize",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 2,
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": {
+              "name": "leads-mcp-evidence",
+              "version": "1.0.0"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {
+            "tools": {
+              "listChanged": true
+            }
+          },
+          "serverInfo": {
+            "name": "potencia-leads",
+            "version": "1.0.0"
+          },
+          "instructions": "Potencia Dashboard Leads MCP. Call list_projects or create_project to manage workspaces. Use list_leads, get_lead, find_lead_by_email, create_lead, update_lead, or delete_lead to track leads. Use log_approach, list_lead_logs, and delete_lead_log to manage outreach interactions. Use leads_report to compute outbound conversion and pipeline analytics."
+        },
+        "jsonrpc": "2.0",
+        "id": 2
+      }
+    },
+    {
+      "label": "notifications/initialized",
+      "endpoint": "/api/leads/mcp",
+      "status": 202,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "method": "notifications/initialized",
+          "params": {}
+        }
+      },
+      "response": null
+    },
+    {
+      "label": "tools/list",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 3,
+          "method": "tools/list",
+          "params": {}
+        }
+      },
+      "response": {
+        "result": {
+          "tools": [
+            {
+              "name": "list_projects",
+              "description": "List all registered dashboard projects with their slugs, names, taglines, and board IDs.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {}
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "create_project",
+              "description": "Create a new dashboard project workspace with an automatic default Kanban board.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "description": "Project display name."
+                  },
+                  "slug": {
+                    "description": "Optional unique project slug. Defaults to slugified name.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "tagline": {
+                    "description": "Optional project tagline / description.",
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "list_leads",
+              "description": "List outbound leads with optional filtering by project slug, status, text search, and limit.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "projectSlug": {
+                    "description": "Filter by project slug (e.g. 'lawa').",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "status": {
+                    "description": "Filter by lead status.",
+                    "type": "string",
+                    "enum": [
+                      "new",
+                      "contacted",
+                      "replied",
+                      "meeting_booked",
+                      "won",
+                      "lost"
+                    ]
+                  },
+                  "search": {
+                    "description": "Case-insensitive text search in name, company, email, website, or role.",
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "description": "Maximum number of leads to return (1..500, default 100).",
+                    "default": 100,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
+                  }
+                }
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "get_lead",
+              "description": "Retrieve full details of a single lead by its ID, including its chronological outreach logs.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "leadId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "Lead ID (e.g. 'lead_...')"
+                  }
+                },
+                "required": [
+                  "leadId"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "find_lead_by_email",
+              "description": "Find leads matching an email address (case-insensitive, trimmed). Optionally scoped to a single project.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "description": "Email address to search for."
+                  },
+                  "projectSlug": {
+                    "description": "Optional project slug to restrict match to a single project.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "create_lead",
+              "description": "Add a new outbound lead to a project board. Supports email deduplication and optional initial outreach approach.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "projectSlug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "description": "Project slug (required, must exist in registry)."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Lead full name or contact name."
+                  },
+                  "role": {
+                    "description": "Job title or role.",
+                    "type": "string",
+                    "maxLength": 150
+                  },
+                  "email": {
+                    "description": "Contact email.",
+                    "type": "string",
+                    "maxLength": 256
+                  },
+                  "phone": {
+                    "description": "Phone number or WhatsApp.",
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "company": {
+                    "description": "Company or firm name.",
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "website": {
+                    "description": "Website URL.",
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "linkedinUrl": {
+                    "description": "LinkedIn profile URL.",
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "source": {
+                    "description": "Lead origin or referral source.",
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "status": {
+                    "description": "Initial lead status. Defaults to 'new' (or derived if initialApproach provided).",
+                    "type": "string",
+                    "enum": [
+                      "new",
+                      "contacted",
+                      "replied",
+                      "meeting_booked",
+                      "won",
+                      "lost"
+                    ]
+                  },
+                  "notes": {
+                    "description": "Freeform notes or summary.",
+                    "type": "string",
+                    "maxLength": 5000
+                  },
+                  "nextFollowUpAt": {
+                    "description": "Next follow-up timestamp (ISO 8601 string or epoch ms).",
+                    "type": [
+                      "string",
+                      "number"
+                    ]
+                  },
+                  "initialApproach": {
+                    "description": "Optional initial outreach touch logged immediately upon creation.",
+                    "type": "object",
+                    "properties": {
+                      "channel": {
+                        "type": "string",
+                        "enum": [
+                          "email",
+                          "linkedin",
+                          "cold_call",
+                          "whatsapp",
+                          "instagram",
+                          "other"
+                        ],
+                        "description": "Outreach channel used."
+                      },
+                      "direction": {
+                        "description": "Direction (defaults to 'outbound').",
+                        "type": "string",
+                        "enum": [
+                          "outbound",
+                          "inbound"
+                        ]
+                      },
+                      "outcome": {
+                        "description": "Outcome (defaults to 'sent').",
+                        "type": "string",
+                        "enum": [
+                          "sent",
+                          "no_answer",
+                          "voicemail",
+                          "replied",
+                          "interested",
+                          "meeting_booked",
+                          "not_interested",
+                          "bounced"
+                        ]
+                      },
+                      "subject": {
+                        "description": "Subject line or message headline.",
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      "message": {
+                        "description": "Sent message or pitch summary.",
+                        "type": "string",
+                        "maxLength": 10000
+                      },
+                      "approachedAt": {
+                        "description": "Timestamp of initial contact (ISO string or ms, defaults to now).",
+                        "type": [
+                          "string",
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "channel"
+                    ]
+                  },
+                  "onDuplicate": {
+                    "description": "Behavior if a lead with the same email already exists in the project: 'return_existing' or 'error'.",
+                    "default": "return_existing",
+                    "type": "string",
+                    "enum": [
+                      "return_existing",
+                      "error"
+                    ]
+                  }
+                },
+                "required": [
+                  "projectSlug",
+                  "name"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "update_lead",
+              "description": "Update metadata, status, or timestamps of an existing lead. Unspecified fields remain unchanged.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "leadId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "ID of the lead to update."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "projectSlug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "role": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 150
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "email": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 256
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "phone": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "company": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "website": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "linkedinUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "source": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "new",
+                      "contacted",
+                      "replied",
+                      "meeting_booked",
+                      "won",
+                      "lost"
+                    ]
+                  },
+                  "notes": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 5000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "nextFollowUpAt": {
+                    "description": "Next follow-up timestamp (ISO string, epoch ms, or null to clear).",
+                    "type": [
+                      "string",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "lastContactedAt": {
+                    "description": "Last contacted timestamp (ISO string, epoch ms, or null to clear).",
+                    "type": [
+                      "string",
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "leadId"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "delete_lead",
+              "description": "Delete a lead and all associated outreach logs.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "leadId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "ID of the lead to delete."
+                  }
+                },
+                "required": [
+                  "leadId"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "log_approach",
+              "description": "Record an outreach touch (email, LinkedIn, cold call, WhatsApp, etc.) with automatic status progression.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "leadId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "Target lead ID."
+                  },
+                  "channel": {
+                    "description": "Communication channel used (default 'email').",
+                    "default": "email",
+                    "type": "string",
+                    "enum": [
+                      "email",
+                      "linkedin",
+                      "cold_call",
+                      "whatsapp",
+                      "instagram",
+                      "other"
+                    ]
+                  },
+                  "direction": {
+                    "description": "Direction: 'outbound' or 'inbound' (default 'outbound').",
+                    "default": "outbound",
+                    "type": "string",
+                    "enum": [
+                      "outbound",
+                      "inbound"
+                    ]
+                  },
+                  "outcome": {
+                    "description": "Interaction outcome (default 'sent').",
+                    "default": "sent",
+                    "type": "string",
+                    "enum": [
+                      "sent",
+                      "no_answer",
+                      "voicemail",
+                      "replied",
+                      "interested",
+                      "meeting_booked",
+                      "not_interested",
+                      "bounced"
+                    ]
+                  },
+                  "subject": {
+                    "description": "Subject line or headline.",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "message": {
+                    "description": "Notes or message body.",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 10000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "approachedAt": {
+                    "description": "Timestamp of outreach touch (ISO string or epoch ms, defaults to now).",
+                    "type": [
+                      "string",
+                      "number"
+                    ]
+                  },
+                  "nextFollowUpAt": {
+                    "description": "Optional scheduled next follow-up timestamp (ISO string or ms).",
+                    "type": [
+                      "string",
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "autoUpdateStatus": {
+                    "description": "Whether to derive and advance lead status from outcome (default true).",
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "explicitStatus": {
+                    "description": "Explicitly override lead status regardless of derived outcome.",
+                    "type": "string",
+                    "enum": [
+                      "new",
+                      "contacted",
+                      "replied",
+                      "meeting_booked",
+                      "won",
+                      "lost"
+                    ]
+                  }
+                },
+                "required": [
+                  "leadId"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "list_lead_logs",
+              "description": "Retrieve the complete outreach interaction log history for a specific lead in reverse chronological order.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "leadId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "Target lead ID."
+                  }
+                },
+                "required": [
+                  "leadId"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "delete_lead_log",
+              "description": "Delete an outreach log entry from a lead and recalculate the lead's last_contacted_at timestamp.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "leadId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "Target lead ID."
+                  },
+                  "logId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "ID of the outreach log entry to remove."
+                  }
+                },
+                "required": [
+                  "leadId",
+                  "logId"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "leads_report",
+              "description": "Compute real-time outbound funnel metrics, stage counts, reply/conversion rates, and follow-up queues.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "projectSlug": {
+                    "description": "Filter report to a specific project slug (omit for all projects).",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                }
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            }
+          ]
+        },
+        "jsonrpc": "2.0",
+        "id": 3
+      }
+    },
+    {
+      "label": "create_project",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 4,
+          "method": "tools/call",
+          "params": {
+            "name": "create_project",
+            "arguments": {
+              "name": "Manareal mwmt79yi",
+              "slug": "manareal-mwmt79yi",
+              "tagline": "Manareal outbound (local evidence)"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"project\": {\n    \"slug\": \"manareal-mwmt79yi\",\n    \"name\": \"Manareal mwmt79yi\",\n    \"tagline\": \"Manareal outbound (local evidence)\",\n    \"boardId\": \"board_manareal-mwmt79yi\",\n    \"appId\": \"app_manareal-mwmt79yi\"\n  }\n}"
+            }
+          ],
+          "structuredContent": {
+            "project": {
+              "slug": "manareal-mwmt79yi",
+              "name": "Manareal mwmt79yi",
+              "tagline": "Manareal outbound (local evidence)",
+              "boardId": "board_manareal-mwmt79yi",
+              "appId": "app_manareal-mwmt79yi"
+            }
+          }
+        },
+        "jsonrpc": "2.0",
+        "id": 4
+      }
+    },
+    {
+      "label": "create_project duplicate slug",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 5,
+          "method": "tools/call",
+          "params": {
+            "name": "create_project",
+            "arguments": {
+              "name": "Dup",
+              "slug": "manareal-mwmt79yi"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "A project with slug 'manareal-mwmt79yi' already exists (status 409)"
+            }
+          ],
+          "isError": true
+        },
+        "jsonrpc": "2.0",
+        "id": 5
+      }
+    },
+    {
+      "label": "create_project bad slug",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 6,
+          "method": "tools/call",
+          "params": {
+            "name": "create_project",
+            "arguments": {
+              "name": "Bad",
+              "slug": "Bad Slug!"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Slug must be 1–64 characters using lowercase letters, numbers, and hyphens (status 400)"
+            }
+          ],
+          "isError": true
+        },
+        "jsonrpc": "2.0",
+        "id": 6
+      }
+    },
+    {
+      "label": "create_lead",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 7,
+          "method": "tools/call",
+          "params": {
+            "name": "create_lead",
+            "arguments": {
+              "projectSlug": "manareal-mwmt79yi",
+              "name": "Maria Souza",
+              "role": "Owner",
+              "email": "maria@example.com",
+              "company": "Souza Imóveis",
+              "website": "https://souza.example.com",
+              "source": "quicksilver",
+              "notes": "Local evidence lead",
+              "nextFollowUpAt": "2026-11-25T13:00:00.000Z"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"created\": true,\n  \"duplicate\": false,\n  \"lead\": {\n    \"id\": \"lead_13d467a7-4609-4117-a095-d3bf21b45005\",\n    \"projectSlug\": \"manareal-mwmt79yi\",\n    \"name\": \"Maria Souza\",\n    \"role\": \"Owner\",\n    \"email\": \"maria@example.com\",\n    \"phone\": null,\n    \"company\": \"Souza Imóveis\",\n    \"website\": \"https://souza.example.com\",\n    \"linkedinUrl\": null,\n    \"source\": \"quicksilver\",\n    \"status\": \"new\",\n    \"notes\": \"Local evidence lead\",\n    \"createdBy\": \"34Bo59AweFSwsYVbuloI9o9asjjMGWs0\",\n    \"lastContactedAt\": null,\n    \"lastContactedAtMs\": null,\n    \"nextFollowUpAt\": \"2026-11-25T13:00:00.000Z\",\n    \"nextFollowUpAtMs\": 1795611600000,\n    \"createdAt\": \"2026-11-19T00:25:49.413Z\",\n    \"createdAtMs\": 1795047949413,\n    \"updatedAt\": \"2026-11-19T00:25:49.413Z\",\n    \"updatedAtMs\": 1795047949413,\n    \"outreachCount\": 0,\n    \"lastChannel\": null,\n    \"lastOutcome\": null,\n    \"lastLogMessage\": null\n  },\n  \"initialLog\": null\n}"
+            }
+          ],
+          "structuredContent": {
+            "created": true,
+            "duplicate": false,
+            "lead": {
+              "id": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+              "projectSlug": "manareal-mwmt79yi",
+              "name": "Maria Souza",
+              "role": "Owner",
+              "email": "maria@example.com",
+              "phone": null,
+              "company": "Souza Imóveis",
+              "website": "https://souza.example.com",
+              "linkedinUrl": null,
+              "source": "quicksilver",
+              "status": "new",
+              "notes": "Local evidence lead",
+              "createdBy": "34Bo59AweFSwsYVbuloI9o9asjjMGWs0",
+              "lastContactedAt": null,
+              "lastContactedAtMs": null,
+              "nextFollowUpAt": "2026-11-25T13:00:00.000Z",
+              "nextFollowUpAtMs": 1795611600000,
+              "createdAt": "2026-11-19T00:25:49.413Z",
+              "createdAtMs": 1795047949413,
+              "updatedAt": "2026-11-19T00:25:49.413Z",
+              "updatedAtMs": 1795047949413,
+              "outreachCount": 0,
+              "lastChannel": null,
+              "lastOutcome": null,
+              "lastLogMessage": null
+            },
+            "initialLog": null
+          }
+        },
+        "jsonrpc": "2.0",
+        "id": 7
+      }
+    },
+    {
+      "label": "create_lead duplicate email (return_existing, default)",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 8,
+          "method": "tools/call",
+          "params": {
+            "name": "create_lead",
+            "arguments": {
+              "projectSlug": "manareal-mwmt79yi",
+              "name": "Maria S.",
+              "email": "  MARIA@example.com "
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"created\": false,\n  \"duplicate\": true,\n  \"lead\": {\n    \"id\": \"lead_13d467a7-4609-4117-a095-d3bf21b45005\",\n    \"projectSlug\": \"manareal-mwmt79yi\",\n    \"name\": \"Maria Souza\",\n    \"role\": \"Owner\",\n    \"email\": \"maria@example.com\",\n    \"phone\": null,\n    \"company\": \"Souza Imóveis\",\n    \"website\": \"https://souza.example.com\",\n    \"linkedinUrl\": null,\n    \"source\": \"quicksilver\",\n    \"status\": \"new\",\n    \"notes\": \"Local evidence lead\",\n    \"createdBy\": \"34Bo59AweFSwsYVbuloI9o9asjjMGWs0\",\n    \"lastContactedAt\": null,\n    \"lastContactedAtMs\": null,\n    \"nextFollowUpAt\": \"2026-11-25T13:00:00.000Z\",\n    \"nextFollowUpAtMs\": 1795611600000,\n    \"createdAt\": \"2026-11-19T00:25:49.413Z\",\n    \"createdAtMs\": 1795047949413,\n    \"updatedAt\": \"2026-11-19T00:25:49.413Z\",\n    \"updatedAtMs\": 1795047949413,\n    \"outreachCount\": 0,\n    \"lastChannel\": null,\n    \"lastOutcome\": null,\n    \"lastLogMessage\": null\n  }\n}"
+            }
+          ],
+          "structuredContent": {
+            "created": false,
+            "duplicate": true,
+            "lead": {
+              "id": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+              "projectSlug": "manareal-mwmt79yi",
+              "name": "Maria Souza",
+              "role": "Owner",
+              "email": "maria@example.com",
+              "phone": null,
+              "company": "Souza Imóveis",
+              "website": "https://souza.example.com",
+              "linkedinUrl": null,
+              "source": "quicksilver",
+              "status": "new",
+              "notes": "Local evidence lead",
+              "createdBy": "34Bo59AweFSwsYVbuloI9o9asjjMGWs0",
+              "lastContactedAt": null,
+              "lastContactedAtMs": null,
+              "nextFollowUpAt": "2026-11-25T13:00:00.000Z",
+              "nextFollowUpAtMs": 1795611600000,
+              "createdAt": "2026-11-19T00:25:49.413Z",
+              "createdAtMs": 1795047949413,
+              "updatedAt": "2026-11-19T00:25:49.413Z",
+              "updatedAtMs": 1795047949413,
+              "outreachCount": 0,
+              "lastChannel": null,
+              "lastOutcome": null,
+              "lastLogMessage": null
+            }
+          }
+        },
+        "jsonrpc": "2.0",
+        "id": 8
+      }
+    },
+    {
+      "label": "create_lead duplicate email (onDuplicate=error)",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 9,
+          "method": "tools/call",
+          "params": {
+            "name": "create_lead",
+            "arguments": {
+              "projectSlug": "manareal-mwmt79yi",
+              "name": "Maria S.",
+              "email": "maria@example.com",
+              "onDuplicate": "error"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Lead with email 'maria@example.com' already exists in project 'manareal-mwmt79yi' (lead id: lead_13d467a7-4609-4117-a095-d3bf21b45005)"
+            }
+          ],
+          "isError": true
+        },
+        "jsonrpc": "2.0",
+        "id": 9
+      }
+    },
+    {
+      "label": "find_lead_by_email",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 10,
+          "method": "tools/call",
+          "params": {
+            "name": "find_lead_by_email",
+            "arguments": {
+              "email": "maria@example.com",
+              "projectSlug": "manareal-mwmt79yi"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"found\": true,\n  \"leads\": [\n    {\n      \"id\": \"lead_13d467a7-4609-4117-a095-d3bf21b45005\",\n      \"projectSlug\": \"manareal-mwmt79yi\",\n      \"name\": \"Maria Souza\",\n      \"role\": \"Owner\",\n      \"email\": \"maria@example.com\",\n      \"phone\": null,\n      \"company\": \"Souza Imóveis\",\n      \"website\": \"https://souza.example.com\",\n      \"linkedinUrl\": null,\n      \"source\": \"quicksilver\",\n      \"status\": \"new\",\n      \"notes\": \"Local evidence lead\",\n      \"createdBy\": \"34Bo59AweFSwsYVbuloI9o9asjjMGWs0\",\n      \"lastContactedAt\": null,\n      \"lastContactedAtMs\": null,\n      \"nextFollowUpAt\": \"2026-11-25T13:00:00.000Z\",\n      \"nextFollowUpAtMs\": 1795611600000,\n      \"createdAt\": \"2026-11-19T00:25:49.413Z\",\n      \"createdAtMs\": 1795047949413,\n      \"updatedAt\": \"2026-11-19T00:25:49.413Z\",\n      \"updatedAtMs\": 1795047949413,\n      \"outreachCount\": 0,\n      \"lastChannel\": null,\n      \"lastOutcome\": null,\n      \"lastLogMessage\": null\n    }\n  ]\n}"
+            }
+          ],
+          "structuredContent": {
+            "found": true,
+            "leads": [
+              {
+                "id": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+                "projectSlug": "manareal-mwmt79yi",
+                "name": "Maria Souza",
+                "role": "Owner",
+                "email": "maria@example.com",
+                "phone": null,
+                "company": "Souza Imóveis",
+                "website": "https://souza.example.com",
+                "linkedinUrl": null,
+                "source": "quicksilver",
+                "status": "new",
+                "notes": "Local evidence lead",
+                "createdBy": "34Bo59AweFSwsYVbuloI9o9asjjMGWs0",
+                "lastContactedAt": null,
+                "lastContactedAtMs": null,
+                "nextFollowUpAt": "2026-11-25T13:00:00.000Z",
+                "nextFollowUpAtMs": 1795611600000,
+                "createdAt": "2026-11-19T00:25:49.413Z",
+                "createdAtMs": 1795047949413,
+                "updatedAt": "2026-11-19T00:25:49.413Z",
+                "updatedAtMs": 1795047949413,
+                "outreachCount": 0,
+                "lastChannel": null,
+                "lastOutcome": null,
+                "lastLogMessage": null
+              }
+            ]
+          }
+        },
+        "jsonrpc": "2.0",
+        "id": 10
+      }
+    },
+    {
+      "label": "log_approach (sent -> contacted)",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 11,
+          "method": "tools/call",
+          "params": {
+            "name": "log_approach",
+            "arguments": {
+              "leadId": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+              "channel": "email",
+              "direction": "outbound",
+              "outcome": "sent",
+              "subject": "Site novo para Souza Imóveis",
+              "message": "Olá Maria, ..."
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"log\": {\n    \"id\": \"log_7b48d484-2c01-4142-9d84-6d40a35f405c\",\n    \"leadId\": \"lead_13d467a7-4609-4117-a095-d3bf21b45005\",\n    \"channel\": \"email\",\n    \"direction\": \"outbound\",\n    \"outcome\": \"sent\",\n    \"subject\": \"Site novo para Souza Imóveis\",\n    \"message\": \"Olá Maria, ...\",\n    \"createdBy\": \"34Bo59AweFSwsYVbuloI9o9asjjMGWs0\",\n    \"approachedAt\": \"2026-11-19T00:25:49.489Z\",\n    \"approachedAtMs\": 1795047949489,\n    \"createdAt\": \"2026-11-19T00:25:49.491Z\",\n    \"createdAtMs\": 1795047949491\n  },\n  \"lead\": {\n    \"id\": \"lead_13d467a7-4609-4117-a095-d3bf21b45005\",\n    \"projectSlug\": \"manareal-mwmt79yi\",\n    \"name\": \"Maria Souza\",\n    \"role\": \"Owner\",\n    \"email\": \"maria@example.com\",\n    \"phone\": null,\n    \"company\": \"Souza Imóveis\",\n    \"website\": \"https://souza.example.com\",\n    \"linkedinUrl\": null,\n    \"source\": \"quicksilver\",\n    \"status\": \"contacted\",\n    \"notes\": \"Local evidence lead\",\n    \"createdBy\": \"34Bo59AweFSwsYVbuloI9o9asjjMGWs0\",\n    \"lastContactedAt\": \"2026-11-19T00:25:49.489Z\",\n    \"lastContactedAtMs\": 1795047949489,\n    \"nextFollowUpAt\": \"2026-11-25T13:00:00.000Z\",\n    \"nextFollowUpAtMs\": 1795611600000,\n    \"createdAt\": \"2026-11-19T00:25:49.413Z\",\n    \"createdAtMs\": 1795047949413,\n    \"updatedAt\": \"2026-11-19T00:25:49.491Z\",\n    \"updatedAtMs\": 1795047949491,\n    \"outreachCount\": 1,\n    \"lastChannel\": \"email\",\n    \"lastOutcome\": \"sent\",\n    \"lastLogMessage\": \"Olá Maria, ...\"\n  },\n  \"previousStatus\": \"new\"\n}"
+            }
+          ],
+          "structuredContent": {
+            "log": {
+              "id": "log_7b48d484-2c01-4142-9d84-6d40a35f405c",
+              "leadId": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+              "channel": "email",
+              "direction": "outbound",
+              "outcome": "sent",
+              "subject": "Site novo para Souza Imóveis",
+              "message": "Olá Maria, ...",
+              "createdBy": "34Bo59AweFSwsYVbuloI9o9asjjMGWs0",
+              "approachedAt": "2026-11-19T00:25:49.489Z",
+              "approachedAtMs": 1795047949489,
+              "createdAt": "2026-11-19T00:25:49.491Z",
+              "createdAtMs": 1795047949491
+            },
+            "lead": {
+              "id": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+              "projectSlug": "manareal-mwmt79yi",
+              "name": "Maria Souza",
+              "role": "Owner",
+              "email": "maria@example.com",
+              "phone": null,
+              "company": "Souza Imóveis",
+              "website": "https://souza.example.com",
+              "linkedinUrl": null,
+              "source": "quicksilver",
+              "status": "contacted",
+              "notes": "Local evidence lead",
+              "createdBy": "34Bo59AweFSwsYVbuloI9o9asjjMGWs0",
+              "lastContactedAt": "2026-11-19T00:25:49.489Z",
+              "lastContactedAtMs": 1795047949489,
+              "nextFollowUpAt": "2026-11-25T13:00:00.000Z",
+              "nextFollowUpAtMs": 1795611600000,
+              "createdAt": "2026-11-19T00:25:49.413Z",
+              "createdAtMs": 1795047949413,
+              "updatedAt": "2026-11-19T00:25:49.491Z",
+              "updatedAtMs": 1795047949491,
+              "outreachCount": 1,
+              "lastChannel": "email",
+              "lastOutcome": "sent",
+              "lastLogMessage": "Olá Maria, ..."
+            },
+            "previousStatus": "new"
+          }
+        },
+        "jsonrpc": "2.0",
+        "id": 11
+      }
+    },
+    {
+      "label": "log_approach (replied -> replied)",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 12,
+          "method": "tools/call",
+          "params": {
+            "name": "log_approach",
+            "arguments": {
+              "leadId": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+              "channel": "whatsapp",
+              "direction": "inbound",
+              "outcome": "replied",
+              "message": "Pode me mandar mais detalhes?",
+              "approachedAt": "2026-11-19T00:25:50.500Z"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"log\": {\n    \"id\": \"log_b1cada65-5cfd-4bb1-8501-9f861a91dcf0\",\n    \"leadId\": \"lead_13d467a7-4609-4117-a095-d3bf21b45005\",\n    \"channel\": \"whatsapp\",\n    \"direction\": \"inbound\",\n    \"outcome\": \"replied\",\n    \"subject\": null,\n    \"message\": \"Pode me mandar mais detalhes?\",\n    \"createdBy\": \"34Bo59AweFSwsYVbuloI9o9asjjMGWs0\",\n    \"approachedAt\": \"2026-11-19T00:25:50.500Z\",\n    \"approachedAtMs\": 1795047950500,\n    \"createdAt\": \"2026-11-19T00:25:49.518Z\",\n    \"createdAtMs\": 1795047949518\n  },\n  \"lead\": {\n    \"id\": \"lead_13d467a7-4609-4117-a095-d3bf21b45005\",\n    \"projectSlug\": \"manareal-mwmt79yi\",\n    \"name\": \"Maria Souza\",\n    \"role\": \"Owner\",\n    \"email\": \"maria@example.com\",\n    \"phone\": null,\n    \"company\": \"Souza Imóveis\",\n    \"website\": \"https://souza.example.com\",\n    \"linkedinUrl\": null,\n    \"source\": \"quicksilver\",\n    \"status\": \"replied\",\n    \"notes\": \"Local evidence lead\",\n    \"createdBy\": \"34Bo59AweFSwsYVbuloI9o9asjjMGWs0\",\n    \"lastContactedAt\": \"2026-11-19T00:25:50.500Z\",\n    \"lastContactedAtMs\": 1795047950500,\n    \"nextFollowUpAt\": \"2026-11-25T13:00:00.000Z\",\n    \"nextFollowUpAtMs\": 1795611600000,\n    \"createdAt\": \"2026-11-19T00:25:49.413Z\",\n    \"createdAtMs\": 1795047949413,\n    \"updatedAt\": \"2026-11-19T00:25:49.518Z\",\n    \"updatedAtMs\": 1795047949518,\n    \"outreachCount\": 2,\n    \"lastChannel\": \"whatsapp\",\n    \"lastOutcome\": \"replied\",\n    \"lastLogMessage\": \"Pode me mandar mais detalhes?\"\n  },\n  \"previousStatus\": \"contacted\"\n}"
+            }
+          ],
+          "structuredContent": {
+            "log": {
+              "id": "log_b1cada65-5cfd-4bb1-8501-9f861a91dcf0",
+              "leadId": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+              "channel": "whatsapp",
+              "direction": "inbound",
+              "outcome": "replied",
+              "subject": null,
+              "message": "Pode me mandar mais detalhes?",
+              "createdBy": "34Bo59AweFSwsYVbuloI9o9asjjMGWs0",
+              "approachedAt": "2026-11-19T00:25:50.500Z",
+              "approachedAtMs": 1795047950500,
+              "createdAt": "2026-11-19T00:25:49.518Z",
+              "createdAtMs": 1795047949518
+            },
+            "lead": {
+              "id": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+              "projectSlug": "manareal-mwmt79yi",
+              "name": "Maria Souza",
+              "role": "Owner",
+              "email": "maria@example.com",
+              "phone": null,
+              "company": "Souza Imóveis",
+              "website": "https://souza.example.com",
+              "linkedinUrl": null,
+              "source": "quicksilver",
+              "status": "replied",
+              "notes": "Local evidence lead",
+              "createdBy": "34Bo59AweFSwsYVbuloI9o9asjjMGWs0",
+              "lastContactedAt": "2026-11-19T00:25:50.500Z",
+              "lastContactedAtMs": 1795047950500,
+              "nextFollowUpAt": "2026-11-25T13:00:00.000Z",
+              "nextFollowUpAtMs": 1795611600000,
+              "createdAt": "2026-11-19T00:25:49.413Z",
+              "createdAtMs": 1795047949413,
+              "updatedAt": "2026-11-19T00:25:49.518Z",
+              "updatedAtMs": 1795047949518,
+              "outreachCount": 2,
+              "lastChannel": "whatsapp",
+              "lastOutcome": "replied",
+              "lastLogMessage": "Pode me mandar mais detalhes?"
+            },
+            "previousStatus": "contacted"
+          }
+        },
+        "jsonrpc": "2.0",
+        "id": 12
+      }
+    },
+    {
+      "label": "get_lead",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 13,
+          "method": "tools/call",
+          "params": {
+            "name": "get_lead",
+            "arguments": {
+              "leadId": "lead_13d467a7-4609-4117-a095-d3bf21b45005"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"lead\": {\n    \"id\": \"lead_13d467a7-4609-4117-a095-d3bf21b45005\",\n    \"projectSlug\": \"manareal-mwmt79yi\",\n    \"name\": \"Maria Souza\",\n    \"role\": \"Owner\",\n    \"email\": \"maria@example.com\",\n    \"phone\": null,\n    \"company\": \"Souza Imóveis\",\n    \"website\": \"https://souza.example.com\",\n    \"linkedinUrl\": null,\n    \"source\": \"quicksilver\",\n    \"status\": \"replied\",\n    \"notes\": \"Local evidence lead\",\n    \"createdBy\": \"34Bo59AweFSwsYVbuloI9o9asjjMGWs0\",\n    \"lastContactedAt\": \"2026-11-19T00:25:50.500Z\",\n    \"lastContactedAtMs\": 1795047950500,\n    \"nextFollowUpAt\": \"2026-11-25T13:00:00.000Z\",\n    \"nextFollowUpAtMs\": 1795611600000,\n    \"createdAt\": \"2026-11-19T00:25:49.413Z\",\n    \"createdAtMs\": 1795047949413,\n    \"updatedAt\": \"2026-11-19T00:25:49.518Z\",\n    \"updatedAtMs\": 1795047949518,\n    \"outreachCount\": 2,\n    \"lastChannel\": \"whatsapp\",\n    \"lastOutcome\": \"replied\",\n    \"lastLogMessage\": \"Pode me mandar mais detalhes?\"\n  },\n  \"logs\": [\n    {\n      \"id\": \"log_b1cada65-5cfd-4bb1-8501-9f861a91dcf0\",\n      \"leadId\": \"lead_13d467a7-4609-4117-a095-d3bf21b45005\",\n      \"channel\": \"whatsapp\",\n      \"direction\": \"inbound\",\n      \"outcome\": \"replied\",\n      \"subject\": null,\n      \"message\": \"Pode me mandar mais detalhes?\",\n      \"createdBy\": \"34Bo59AweFSwsYVbuloI9o9asjjMGWs0\",\n      \"approachedAt\": \"2026-11-19T00:25:50.500Z\",\n      \"approachedAtMs\": 1795047950500,\n      \"createdAt\": \"2026-11-19T00:25:49.518Z\",\n      \"createdAtMs\": 1795047949518\n    },\n    {\n      \"id\": \"log_7b48d484-2c01-4142-9d84-6d40a35f405c\",\n      \"leadId\": \"lead_13d467a7-4609-4117-a095-d3bf21b45005\",\n      \"channel\": \"email\",\n      \"direction\": \"outbound\",\n      \"outcome\": \"sent\",\n      \"subject\": \"Site novo para Souza Imóveis\",\n      \"message\": \"Olá Maria, ...\",\n      \"createdBy\": \"34Bo59AweFSwsYVbuloI9o9asjjMGWs0\",\n      \"approachedAt\": \"2026-11-19T00:25:49.489Z\",\n      \"approachedAtMs\": 1795047949489,\n      \"createdAt\": \"2026-11-19T00:25:49.491Z\",\n      \"createdAtMs\": 1795047949491\n    }\n  ]\n}"
+            }
+          ],
+          "structuredContent": {
+            "lead": {
+              "id": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+              "projectSlug": "manareal-mwmt79yi",
+              "name": "Maria Souza",
+              "role": "Owner",
+              "email": "maria@example.com",
+              "phone": null,
+              "company": "Souza Imóveis",
+              "website": "https://souza.example.com",
+              "linkedinUrl": null,
+              "source": "quicksilver",
+              "status": "replied",
+              "notes": "Local evidence lead",
+              "createdBy": "34Bo59AweFSwsYVbuloI9o9asjjMGWs0",
+              "lastContactedAt": "2026-11-19T00:25:50.500Z",
+              "lastContactedAtMs": 1795047950500,
+              "nextFollowUpAt": "2026-11-25T13:00:00.000Z",
+              "nextFollowUpAtMs": 1795611600000,
+              "createdAt": "2026-11-19T00:25:49.413Z",
+              "createdAtMs": 1795047949413,
+              "updatedAt": "2026-11-19T00:25:49.518Z",
+              "updatedAtMs": 1795047949518,
+              "outreachCount": 2,
+              "lastChannel": "whatsapp",
+              "lastOutcome": "replied",
+              "lastLogMessage": "Pode me mandar mais detalhes?"
+            },
+            "logs": [
+              {
+                "id": "log_b1cada65-5cfd-4bb1-8501-9f861a91dcf0",
+                "leadId": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+                "channel": "whatsapp",
+                "direction": "inbound",
+                "outcome": "replied",
+                "subject": null,
+                "message": "Pode me mandar mais detalhes?",
+                "createdBy": "34Bo59AweFSwsYVbuloI9o9asjjMGWs0",
+                "approachedAt": "2026-11-19T00:25:50.500Z",
+                "approachedAtMs": 1795047950500,
+                "createdAt": "2026-11-19T00:25:49.518Z",
+                "createdAtMs": 1795047949518
+              },
+              {
+                "id": "log_7b48d484-2c01-4142-9d84-6d40a35f405c",
+                "leadId": "lead_13d467a7-4609-4117-a095-d3bf21b45005",
+                "channel": "email",
+                "direction": "outbound",
+                "outcome": "sent",
+                "subject": "Site novo para Souza Imóveis",
+                "message": "Olá Maria, ...",
+                "createdBy": "34Bo59AweFSwsYVbuloI9o9asjjMGWs0",
+                "approachedAt": "2026-11-19T00:25:49.489Z",
+                "approachedAtMs": 1795047949489,
+                "createdAt": "2026-11-19T00:25:49.491Z",
+                "createdAtMs": 1795047949491
+              }
+            ]
+          }
+        },
+        "jsonrpc": "2.0",
+        "id": 13
+      }
+    },
+    {
+      "label": "leads_report",
+      "endpoint": "/api/leads/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 14,
+          "method": "tools/call",
+          "params": {
+            "name": "leads_report",
+            "arguments": {
+              "projectSlug": "manareal-mwmt79yi"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"report\": {\n    \"totalLeads\": 1,\n    \"contactedLeads\": 1,\n    \"uncontactedLeads\": 0,\n    \"engagedLeads\": 1,\n    \"meetingsBooked\": 0,\n    \"wonLeads\": 0,\n    \"lostLeads\": 0,\n    \"totalOutreachLogs\": 2,\n    \"leadsApproachedToday\": 1,\n    \"approachesToday\": 1,\n    \"avgTouchesPerContactedLead\": 2,\n    \"contactRatePercent\": 100,\n    \"replyRatePercent\": 100,\n    \"conversionRatePercent\": 0,\n    \"overdueFollowUps\": 0,\n    \"dueTodayOrSoonFollowUps\": 0,\n    \"byStatus\": {\n      \"new\": 0,\n      \"contacted\": 0,\n      \"replied\": 1,\n      \"meeting_booked\": 0,\n      \"won\": 0,\n      \"lost\": 0\n    },\n    \"byProject\": [\n      {\n        \"projectSlug\": \"manareal-mwmt79yi\",\n        \"totalLeads\": 1,\n        \"contactedLeads\": 1,\n        \"repliedLeads\": 1,\n        \"meetingsBooked\": 0,\n        \"wonLeads\": 0,\n        \"lostLeads\": 0,\n        \"totalLogs\": 2,\n        \"replyRatePercent\": 100\n      }\n    ],\n    \"byChannel\": [\n      {\n        \"channel\": \"email\",\n        \"totalLogs\": 1,\n        \"positiveOutcomes\": 0,\n        \"positiveRatePercent\": 0\n      },\n      {\n        \"channel\": \"whatsapp\",\n        \"totalLogs\": 1,\n        \"positiveOutcomes\": 1,\n        \"positiveRatePercent\": 100\n      }\n    ]\n  }\n}"
+            }
+          ],
+          "structuredContent": {
+            "report": {
+              "totalLeads": 1,
+              "contactedLeads": 1,
+              "uncontactedLeads": 0,
+              "engagedLeads": 1,
+              "meetingsBooked": 0,
+              "wonLeads": 0,
+              "lostLeads": 0,
+              "totalOutreachLogs": 2,
+              "leadsApproachedToday": 1,
+              "approachesToday": 1,
+              "avgTouchesPerContactedLead": 2,
+              "contactRatePercent": 100,
+              "replyRatePercent": 100,
+              "conversionRatePercent": 0,
+              "overdueFollowUps": 0,
+              "dueTodayOrSoonFollowUps": 0,
+              "byStatus": {
+                "new": 0,
+                "contacted": 0,
+                "replied": 1,
+                "meeting_booked": 0,
+                "won": 0,
+                "lost": 0
+              },
+              "byProject": [
+                {
+                  "projectSlug": "manareal-mwmt79yi",
+                  "totalLeads": 1,
+                  "contactedLeads": 1,
+                  "repliedLeads": 1,
+                  "meetingsBooked": 0,
+                  "wonLeads": 0,
+                  "lostLeads": 0,
+                  "totalLogs": 2,
+                  "replyRatePercent": 100
+                }
+              ],
+              "byChannel": [
+                {
+                  "channel": "email",
+                  "totalLogs": 1,
+                  "positiveOutcomes": 0,
+                  "positiveRatePercent": 0
+                },
+                {
+                  "channel": "whatsapp",
+                  "totalLogs": 1,
+                  "positiveOutcomes": 1,
+                  "positiveRatePercent": 100
+                }
+              ]
+            }
+          }
+        },
+        "jsonrpc": "2.0",
+        "id": 14
+      }
+    },
+    {
+      "label": "kanban tools/list (create_project added)",
+      "endpoint": "/api/kanban/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 15,
+          "method": "tools/list",
+          "params": {}
+        }
+      },
+      "response": {
+        "result": {
+          "tools": [
+            {
+              "name": "list_projects",
+              "description": "List available Kanban projects (by projectSlug) along with their status columns.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {}
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "create_project",
+              "description": "Create a new dashboard project and its default Kanban board columns.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "description": "Project display name."
+                  },
+                  "slug": {
+                    "description": "Optional unique project slug. Defaults to slugified name.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "tagline": {
+                    "description": "Optional project tagline / description.",
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "list_tasks",
+              "description": "Retrieve Kanban tasks for a project. Supports filtering by status (column name like 'To do' / 'In Progress' or columnId), priority, and text search.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "projectSlug": {
+                    "description": "Project slug (e.g. 'lawa'). Defaults to 'lawa'.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "status": {
+                    "description": "Filter by status column name (e.g. 'Backlog', 'To do', 'In Progress', 'Review', 'Done') or columnId.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high",
+                      "urgent"
+                    ]
+                  },
+                  "search": {
+                    "description": "Case-insensitive substring match against title or description.",
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "description": "Optional maximum number of tasks to return.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  }
+                }
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "get_task",
+              "description": "Retrieve full details of a single Kanban task by its cardId.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "cardId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "Task / card ID (e.g. 'card_...')"
+                  }
+                },
+                "required": [
+                  "cardId"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "create_task",
+              "description": "Create a new Kanban task card on a project board. Defaults to the 'To do' column and 'medium' priority.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "projectSlug": {
+                    "description": "Project slug (e.g. 'lawa'). Defaults to 'lawa'.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300,
+                    "description": "Task title."
+                  },
+                  "description": {
+                    "description": "Optional task description.",
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "status": {
+                    "description": "Target status column name (e.g. 'Backlog', 'To do', 'In Progress', 'Review', 'Done') or columnId. Defaults to 'To do'.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "priority": {
+                    "description": "Task priority. Defaults to 'medium'.",
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high",
+                      "urgent"
+                    ]
+                  },
+                  "position": {
+                    "description": "Insert at 'top' or 'bottom' of the target column. Defaults to 'bottom'.",
+                    "type": "string",
+                    "enum": [
+                      "top",
+                      "bottom"
+                    ]
+                  }
+                },
+                "required": [
+                  "title"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "change_task_status",
+              "description": "Move a Kanban task to a different status column (e.g. 'Backlog', 'To do', 'In Progress', 'Review', 'Done') and optionally position it.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "cardId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "Task / card ID to move."
+                  },
+                  "status": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "Destination status column name (e.g. 'In Progress', 'Done') or columnId."
+                  },
+                  "position": {
+                    "description": "Optional destination position ('top', 'bottom', or 0-based index). Defaults to 'bottom'.",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "top",
+                          "bottom"
+                        ]
+                      },
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "cardId",
+                  "status"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            },
+            {
+              "name": "update_task",
+              "description": "Update a Kanban task's title, description, priority, and/or status column. Unspecified fields remain unchanged.",
+              "inputSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                  "cardId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "Task / card ID to update."
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 10000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high",
+                      "urgent"
+                    ]
+                  },
+                  "status": {
+                    "description": "New status column name or columnId.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "cardId"
+                ]
+              },
+              "execution": {
+                "taskSupport": "forbidden"
+              }
+            }
+          ]
+        },
+        "jsonrpc": "2.0",
+        "id": 15
+      }
+    },
+    {
+      "label": "kanban create_project",
+      "endpoint": "/api/kanban/mcp",
+      "status": 200,
+      "request": {
+        "headers": {
+          "content-type": "application/json",
+          "accept": "application/json, text/event-stream",
+          "mcp-protocol-version": "2025-06-18",
+          "authorization": "Bearer <REDACTED_TOKEN>"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 16,
+          "method": "tools/call",
+          "params": {
+            "name": "create_project",
+            "arguments": {
+              "name": "Quicksilver mwmt79yi",
+              "slug": "quicksilver-mwmt79yi"
+            }
+          }
+        }
+      },
+      "response": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"project\": {\n    \"slug\": \"quicksilver-mwmt79yi\",\n    \"name\": \"Quicksilver mwmt79yi\",\n    \"tagline\": \"\",\n    \"boardId\": \"board_quicksilver-mwmt79yi\",\n    \"appId\": \"app_quicksilver-mwmt79yi\"\n  }\n}"
+            }
+          ],
+          "structuredContent": {
+            "project": {
+              "slug": "quicksilver-mwmt79yi",
+              "name": "Quicksilver mwmt79yi",
+              "tagline": "",
+              "boardId": "board_quicksilver-mwmt79yi",
+              "appId": "app_quicksilver-mwmt79yi"
+            }
+          }
+        },
+        "jsonrpc": "2.0",
+        "id": 16
+      }
+    }
+  ]
+}

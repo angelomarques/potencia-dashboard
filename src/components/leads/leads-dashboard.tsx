@@ -28,6 +28,7 @@ import {
 } from "@/lib/leads/types";
 import { computeLeadsReport } from "@/lib/leads/report";
 import type { LeadProjectOption } from "@/lib/leads/repo";
+import { KanbanMcpDialog } from "@/components/projects/kanban-mcp-dialog";
 import { LeadsReportCards } from "./leads-report-cards";
 import { LeadDialog } from "./lead-dialog";
 import { LogApproachDialog } from "./log-approach-dialog";
@@ -466,6 +467,14 @@ export function LeadsDashboard({
               <BarChart3 className="h-3.5 w-3.5 text-primary" />
               {showDetailedReport ? "Hide Breakdown" : "Show Breakdown"}
             </Button>
+
+            <KanbanMcpDialog
+              endpointPath="/api/leads/mcp"
+              serverName="potencia-leads"
+              title="Leads MCP Access"
+              description="Create a personal bearer token so your AI agents (Antigravity, Cursor, Claude Code) can create projects, manage leads, and log outreach approaches."
+              triggerTestId="leads-mcp-access"
+            />
 
             <Button
               type="button"

@@ -13,8 +13,17 @@ http.createServer((req, res) => {
   let b = ""; req.on("data", (c) => (b += c)); req.on("end", () => {
     try {
       const body = JSON.parse(b);
-      const list = Array.isArray(body) ? body : [body];
-      const result = list.map((s) => run(s.sql, s.params));
+      // Real D1 /query accepts one statement or the documented { batch: [...] } form (atomic).
+      const isBatch = body && Array.isArray(body.batch);
+      const list = isBatch ? body.batch : Array.isArray(body) ? body : [body];
+      let result;
+      if (isBatch) {
+        db.exec("BEGIN");
+        try { result = list.map((s) => run(s.sql, s.params)); db.exec("COMMIT"); }
+        catch (err) { db.exec("ROLLBACK"); throw err; }
+      } else {
+        result = list.map((s) => run(s.sql, s.params));
+      }
       res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ success: true, result }));
     } catch (e) {
       console.error(e.message);
