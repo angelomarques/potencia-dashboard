@@ -35,6 +35,8 @@ export interface LeadsReportSummary {
   wonLeads: number;
   lostLeads: number;
   totalOutreachLogs: number;
+  leadsApproachedToday: number;
+  approachesToday: number;
   avgTouchesPerContactedLead: number;
   contactRatePercent: number;
   replyRatePercent: number;
@@ -91,6 +93,17 @@ export function computeLeadsReport(
   let totalTouchesAcrossLeads = 0;
 
   const soonHorizonMs = now + 3 * 24 * 60 * 60 * 1000; // next 72 hours
+  const nowDate = new Date(now);
+  const startOfTodayMs = new Date(
+    nowDate.getFullYear(),
+    nowDate.getMonth(),
+    nowDate.getDate(),
+  ).getTime();
+  const startOfTomorrowMs = new Date(
+    nowDate.getFullYear(),
+    nowDate.getMonth(),
+    nowDate.getDate() + 1,
+  ).getTime();
 
   const projectMap = new Map<
     string,
@@ -166,7 +179,12 @@ export function computeLeadsReport(
     channelMap.set(ch, { totalLogs: 0, positiveOutcomes: 0 });
   }
 
+  let approachesToday = 0;
+  const leadsApproachedTodaySet = new Set<string>();
+  const leadIdsWithLogs = new Set<string>();
+
   for (const log of logs) {
+    leadIdsWithLogs.add(log.leadId);
     const chStats = channelMap.get(log.channel) ?? {
       totalLogs: 0,
       positiveOutcomes: 0,
@@ -176,7 +194,30 @@ export function computeLeadsReport(
       chStats.positiveOutcomes++;
     }
     channelMap.set(log.channel, chStats);
+
+    if (
+      leadProjectById.has(log.leadId) &&
+      log.direction === "outbound" &&
+      log.approachedAt >= startOfTodayMs &&
+      log.approachedAt < startOfTomorrowMs
+    ) {
+      approachesToday++;
+      leadsApproachedTodaySet.add(log.leadId);
+    }
   }
+
+  for (const lead of leads) {
+    if (
+      !leadIdsWithLogs.has(lead.id) &&
+      lead.lastContactedAt != null &&
+      lead.lastContactedAt >= startOfTodayMs &&
+      lead.lastContactedAt < startOfTomorrowMs
+    ) {
+      leadsApproachedTodaySet.add(lead.id);
+    }
+  }
+
+  const leadsApproachedToday = leadsApproachedTodaySet.size;
 
   const totalLeads = leads.length;
   const uncontactedLeads = Math.max(0, totalLeads - contactedLeads);
@@ -221,6 +262,8 @@ export function computeLeadsReport(
     wonLeads,
     lostLeads,
     totalOutreachLogs,
+    leadsApproachedToday,
+    approachesToday,
     avgTouchesPerContactedLead,
     contactRatePercent: roundPercent(contactedLeads, totalLeads),
     replyRatePercent: roundPercent(engagedLeads, contactedLeads),

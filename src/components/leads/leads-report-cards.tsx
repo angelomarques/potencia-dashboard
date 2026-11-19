@@ -12,6 +12,7 @@ import {
 import type { LeadsReportSummary } from "@/lib/leads/report";
 import type { LeadProjectOption } from "@/lib/leads/repo";
 import {
+  CalendarCheck2,
   CalendarClock,
   CheckCircle2,
   FolderGit2,
@@ -41,8 +42,8 @@ export function LeadsReportCards({
 
   return (
     <div className="space-y-4" data-testid="leads-report-section">
-      {/* Top 5 KPI Summary Cards */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+      {/* Top 6 KPI Summary Cards */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card className="border-border/70">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -89,6 +90,32 @@ export function LeadsReportCards({
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
               Avg {report.avgTouchesPerContactedLead} touches / contacted lead
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">
+                Leads Approached Today
+              </span>
+              <CalendarCheck2 className="h-4 w-4 text-sky-500" />
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span
+                className="text-2xl font-bold tracking-tight"
+                data-testid="metric-leads-approached-today"
+              >
+                {report.leadsApproachedToday}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                ({report.approachesToday}{" "}
+                {report.approachesToday === 1 ? "touch" : "touches"})
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Unique leads approached today
             </p>
           </CardContent>
         </Card>
