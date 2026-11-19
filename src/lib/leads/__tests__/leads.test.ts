@@ -230,10 +230,66 @@ describe("Lead Outbound Tracker - Report Aggregation", () => {
     expect(report.wonLeads).toBe(1);
     expect(report.overdueFollowUps).toBe(1); // only l1
     expect(report.dueTodayOrSoonFollowUps).toBe(1); // l3
+    expect(report.leadsApproachedToday).toBe(2); // l1 (lg1 outbound) + l2 (lg3 outbound)
+    expect(report.approachesToday).toBe(2); // excludes lg2 (inbound)
     expect(report.replyRatePercent).toBe(100); // 2 engaged out of 2 contacted
     expect(report.byProject).toHaveLength(1);
     expect(report.byProject[0]?.projectSlug).toBe("lawa");
     expect(report.byChannel).toHaveLength(2); // email and cold_call
+  });
+
+  it("counts unique leads approached today and excludes yesterday and inbound logs", () => {
+    const midday = new Date(2026, 4, 15, 14, 0, 0).getTime();
+    const yesterday = new Date(2026, 4, 14, 18, 0, 0).getTime();
+
+    const leads: LeadWithStats[] = [
+      { ...sampleLeads[0]!, id: "today-multi", lastContactedAt: midday },
+      { ...sampleLeads[1]!, id: "yesterday-only", lastContactedAt: yesterday },
+      { ...sampleLeads[0]!, id: "inbound-only", lastContactedAt: midday },
+      {
+        ...sampleLeads[2]!,
+        id: "no-logs-contacted-today",
+        status: "contacted",
+        outreachCount: 0,
+        lastContactedAt: midday - 1_000,
+      },
+    ];
+
+    const logs: LeadOutreachLog[] = [
+      {
+        ...sampleLogs[0]!,
+        id: "a1",
+        leadId: "today-multi",
+        direction: "outbound",
+        approachedAt: midday - 60_000,
+      },
+      {
+        ...sampleLogs[0]!,
+        id: "a2",
+        leadId: "today-multi",
+        direction: "outbound",
+        approachedAt: midday - 30_000,
+      },
+      {
+        ...sampleLogs[2]!,
+        id: "a3",
+        leadId: "yesterday-only",
+        direction: "outbound",
+        approachedAt: yesterday,
+      },
+      {
+        ...sampleLogs[1]!,
+        id: "a4",
+        leadId: "inbound-only",
+        direction: "inbound",
+        approachedAt: midday - 10_000,
+      },
+    ];
+
+    const report = computeLeadsReport(leads, logs, midday);
+
+    expect(report.leadsApproachedToday).toBe(2); // today-multi + no-logs-contacted-today
+    expect(report.approachesToday).toBe(2); // a1 + a2
   });
 });
 
