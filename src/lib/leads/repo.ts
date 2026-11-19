@@ -256,6 +256,7 @@ export async function listLeads(filters?: {
   projectSlug?: string;
   status?: LeadStatus;
   search?: string;
+  limit?: number;
 }): Promise<LeadWithStats[]> {
   await ensureLeadsSchema();
 
@@ -283,6 +284,12 @@ export async function listLeads(filters?: {
   const whereSql =
     whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
+  let limitClause = "";
+  if (filters?.limit && filters.limit > 0) {
+    limitClause = "LIMIT ?";
+    params.push(Math.floor(filters.limit));
+  }
+
   const sql = `
     SELECT
       l.*,
@@ -293,6 +300,7 @@ export async function listLeads(filters?: {
     FROM leads l
     ${whereSql}
     ORDER BY COALESCE(l.last_contacted_at, l.created_at) DESC, l.created_at DESC
+    ${limitClause}
   `;
 
   const { results } = await d1Query<LeadDbRow>(sql, params);
@@ -316,6 +324,44 @@ export async function getLeadById(id: string): Promise<LeadWithStats | null> {
 
   const { results } = await d1Query<LeadDbRow>(sql, [id]);
   return results[0] ? mapLeadRow(results[0]) : null;
+}
+
+/**
+ * Leads whose email matches `email` (trimmed, case-insensitive), optionally
+ * scoped to one project. Used by the Leads MCP for dedupe.
+ */
+export async function findLeadByEmail(
+  email: string,
+  projectSlug?: string,
+): Promise<LeadWithStats[]> {
+  await ensureLeadsSchema();
+
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return [];
+
+  const whereClauses: string[] = ["LOWER(TRIM(COALESCE(l.email, ''))) = ?"];
+  const params: unknown[] = [cleanEmail];
+
+  if (projectSlug && projectSlug !== "all") {
+    whereClauses.push("l.project_slug = ?");
+    params.push(projectSlug.trim());
+  }
+
+  const whereSql = `WHERE ${whereClauses.join(" AND ")}`;
+  const sql = `
+    SELECT
+      l.*,
+      (SELECT COUNT(*) FROM lead_outreach_logs lg WHERE lg.lead_id = l.id) AS outreach_count,
+      (SELECT lg.channel FROM lead_outreach_logs lg WHERE lg.lead_id = l.id ORDER BY lg.approached_at DESC, lg.created_at DESC LIMIT 1) AS last_channel,
+      (SELECT lg.outcome FROM lead_outreach_logs lg WHERE lg.lead_id = l.id ORDER BY lg.approached_at DESC, lg.created_at DESC LIMIT 1) AS last_outcome,
+      (SELECT lg.message FROM lead_outreach_logs lg WHERE lg.lead_id = l.id ORDER BY lg.approached_at DESC, lg.created_at DESC LIMIT 1) AS last_log_message
+    FROM leads l
+    ${whereSql}
+    ORDER BY COALESCE(l.last_contacted_at, l.created_at) DESC, l.created_at DESC
+  `;
+
+  const { results } = await d1Query<LeadDbRow>(sql, params);
+  return results.map(mapLeadRow);
 }
 
 export async function listLogsForLead(

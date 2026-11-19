@@ -26,7 +26,21 @@ function formatDate(ts: number | null): string {
   });
 }
 
-export function KanbanMcpDialog() {
+export interface KanbanMcpDialogProps {
+  endpointPath?: string;
+  serverName?: string;
+  title?: string;
+  description?: string;
+  triggerTestId?: string;
+}
+
+export function KanbanMcpDialog({
+  endpointPath = "/api/kanban/mcp",
+  serverName = "potencia-kanban",
+  title = "Kanban MCP Access",
+  description = "Create a personal bearer token so your AI agents (Antigravity, Cursor, Claude Code) can list tasks, create cards, and change task statuses.",
+  triggerTestId = "kanban-mcp-button",
+}: KanbanMcpDialogProps = {}) {
   const [open, setOpen] = useState(false);
   const [tokens, setTokens] = useState<KanbanMcpTokenRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,8 +52,8 @@ export function KanbanMcpDialog() {
 
   const endpointUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/api/kanban/mcp`
-      : "https://dashboard.potenciaapps.com.br/api/kanban/mcp";
+      ? `${window.location.origin}${endpointPath}`
+      : `https://dashboard.potenciaapps.com.br${endpointPath}`;
 
   const loadTokens = useCallback(async () => {
     setLoading(true);
@@ -125,7 +139,7 @@ export function KanbanMcpDialog() {
   const antigravityConfig = JSON.stringify(
     {
       mcpServers: {
-        "potencia-kanban": {
+        [serverName]: {
           serverUrl: endpointUrl,
           headers: {
             Authorization: `Bearer ${tokenPlaceholder}`,
@@ -139,7 +153,7 @@ export function KanbanMcpDialog() {
   const cursorConfig = JSON.stringify(
     {
       mcpServers: {
-        "potencia-kanban": {
+        [serverName]: {
           url: endpointUrl,
           headers: {
             Authorization: `Bearer ${tokenPlaceholder}`,
@@ -158,7 +172,7 @@ export function KanbanMcpDialog() {
           variant="outline"
           size="sm"
           className="h-8 gap-1.5 text-xs"
-          data-testid="kanban-mcp-button"
+          data-testid={triggerTestId}
         >
           <Bot className="h-3.5 w-3.5 text-primary" />
           MCP Access
@@ -169,11 +183,10 @@ export function KanbanMcpDialog() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-primary" />
-            Kanban MCP Access
+            {title}
           </DialogTitle>
           <DialogDescription>
-            Create a personal bearer token so your AI agents (Antigravity, Cursor,
-            Claude Code) can list tasks, create cards, and change task statuses.
+            {description}
           </DialogDescription>
         </DialogHeader>
 
@@ -240,7 +253,7 @@ export function KanbanMcpDialog() {
               Your Tokens
             </span>
             <span className="text-[11px] text-muted-foreground">
-              Endpoint: <code>/api/kanban/mcp</code>
+              Endpoint: <code>{endpointPath}</code>
             </span>
           </div>
 
